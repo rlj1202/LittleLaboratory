@@ -1,3 +1,25 @@
 <resources>
-    <string name="app_name">LittleLaboratory</string>
+    <string name="app_name">작은 실험실</string>
+
+    <string name="navigation_drawer_open">navigation open</string>
+    <string name="navigation_drawer_close">navigation close</string>
+
+    <string name="new_experiment">새 실험</string>
+    <string name="new_measurement">새 측정</string>
+    <string name="title">제목</string>
+    <string name="description">설명</string>
+    <string name="done">완료</string>
+    <string name="measure">측정</string>
+    <string name="start">시작</string>
+    <string name="sensor">센서</string>
+
+    <string name="type_accelerometer">가속도</string>
+    <string name="type_gyroscope">자이로</string>
+    <string name="type_gravity">중력</string>
+    <string name="type_light">조도</string>
+    <string name="type_magnetic_field">자기장</string>
+    <string name="type_pressure">압력</string>
+    <string name="type_linear_acceleration">선형 가속도</string>
+    <string name="type_proximity">근접</string>
+    <string name="type_orientation">방향</string>
 </resources>
