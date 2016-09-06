@@ -14,9 +14,10 @@
         </android.support.v7.widget.Toolbar>
     </android.support.design.widget.AppBarLayout>
 
-    <com.jjoe64.graphview.GraphView
-        android:id="@+id/graph"
+    <ListView
+        android:id="@+id/graphList"
         android:layout_width="match_parent"
-        android:layout_height="200dp"
-        />
+        android:layout_height="wrap_content">
+
+    </ListView>
 </LinearLayout>
