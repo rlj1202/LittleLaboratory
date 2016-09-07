@@ -9,7 +9,9 @@
         android:layout_height="wrap_content">
         <android.support.v7.widget.Toolbar
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            app:title="@string/measurement"
+            app:titleTextColor="#ffffff">
 
         </android.support.v7.widget.Toolbar>
     </android.support.design.widget.AppBarLayout>

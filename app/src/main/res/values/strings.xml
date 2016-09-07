@@ -9,10 +9,13 @@
     <string name="title">제목</string>
     <string name="description">설명</string>
     <string name="done">완료</string>
-    <string name="measure">측정</string>
+    <string name="experiment">실험</string>
+    <string name="measurement">측정</string>
     <string name="start">시작</string>
     <string name="sensor">센서</string>
+    <string name="time">시간</string>
 
+    <string name="type_none">none</string>
     <string name="type_accelerometer">가속도</string>
     <string name="type_gyroscope">자이로</string>
     <string name="type_gravity">중력</string>

@@ -7,6 +7,7 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.Layout;
 import android.view.LayoutInflater;
 import android.widget.ListView;
@@ -24,8 +25,11 @@ public class MeasurementActivity extends Activity {
 
         private static int milliSecond = 100;
 
+        private Handler handler;
+
         private SensorManager sensorManager;
         private Sensor sensor;
+        private int sensorType;
         private float[] values;
 
         private String[] valueNames;
@@ -34,14 +38,25 @@ public class MeasurementActivity extends Activity {
         private LineGraphSeries<DataPoint>[] serieses;
 
         private int time = 0;
+        private Thread thread;
 
-        public SensorHandler(SensorManager sensorManager, Sensor sensor, String[] valueNames, int[] colors) {
+        public SensorHandler(SensorManager sensorManager, Sensor sensor, int sensorType) {
             this.sensorManager = sensorManager;
             this.sensor = sensor;
-            this.valueNames = valueNames;
-            this.colors = colors;
+            this.sensorType = sensorType;
+
+            valueNames = SensorInformation.fromSensorType(sensor.getType()).getValueNames();
+            colors = SensorInformation.fromSensorType(sensor.getType()).getColors();
 
             startHandling();
+        }
+
+        public Sensor getSensor() {
+            return sensor;
+        }
+
+        public int getSensorType() {
+            return sensorType;
         }
 
         public LineGraphSeries<DataPoint>[] getSerieses() {
@@ -57,26 +72,23 @@ public class MeasurementActivity extends Activity {
                 serieses[i] = series;
 
                 series.setColor(colors[i]);
+                series.setTitle(valueNames[i]);
             }
 
-            new Thread() {
+            thread = new Thread() {
                 @Override
                 public void run() {
-                    while (true) {
-                        if (values != null) for (int i = 0; i < values.length; i++) {
-                            float value = values[i];
+                    if (values != null) for (int i = 0; i < values.length; i++) {
+                        float value = values[i];
 
-                            if (i < valueNames.length) serieses[i].appendData(new DataPoint(time++, value), true, 100);
-                        }
-
-                        try {
-                            Thread.sleep(milliSecond);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
+                        if (i < valueNames.length) serieses[i].appendData(new DataPoint(time++, value), true, 100);
                     }
+
+                    handler.postDelayed(this, milliSecond);
                 }
-            }.start();
+            };
+            handler = new Handler();
+            handler.postDelayed(thread, 1000);
         }
 
         @Override
@@ -92,7 +104,6 @@ public class MeasurementActivity extends Activity {
     }
 
     private SensorManager sensorManager;
-    private LayoutInflater inflater;
     private List<SensorHandler> handlers;
 
     @Override
@@ -100,25 +111,13 @@ public class MeasurementActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_measurement);
 
-        inflater = (LayoutInflater) getApplicationContext().getSystemService(LAYOUT_INFLATER_SERVICE);
-
         int[] sensorTypes = getIntent().getIntArrayExtra("sensorTypes");
 
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         handlers = new ArrayList<SensorHandler>();
         for (int sensorType : sensorTypes) {
-            String[] valueNames = null;
-            int[] colors = null;
-
-            if (sensorType == Sensor.TYPE_PROXIMITY) {
-                valueNames = new String[] {"proximity"}; colors = new int[] {0xffffffff};
-            }
-            if (sensorType == Sensor.TYPE_ACCELEROMETER) {
-                valueNames = new String[] {"x", "y", "z"}; colors = new int[] {0xffff0000, 0xff00ff00, 0xff0000ff};
-            }
-
             Sensor sensor = sensorManager.getDefaultSensor(sensorType);
-            SensorHandler sensorHandler = new SensorHandler(sensorManager, sensor, valueNames, colors);
+            SensorHandler sensorHandler = new SensorHandler(sensorManager, sensor, sensorType);
 
             handlers.add(sensorHandler);
         }
