@@ -9,6 +9,7 @@ import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.Layout;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.widget.ListView;
 
@@ -81,14 +82,17 @@ public class MeasurementActivity extends Activity {
                     if (values != null) for (int i = 0; i < values.length; i++) {
                         float value = values[i];
 
-                        if (i < valueNames.length) serieses[i].appendData(new DataPoint(time++, value), true, 100);
+                        if (i < valueNames.length) serieses[i].appendData(new DataPoint(time, value), true, 100);
                     }
+
+                    time++;
 
                     handler.postDelayed(this, milliSecond);
                 }
             };
             handler = new Handler();
-            handler.postDelayed(thread, 1000);
+            handler.post(thread);
+//            handler.postDelayed(thread, 1000);
         }
 
         @Override
@@ -113,19 +117,18 @@ public class MeasurementActivity extends Activity {
 
         int[] sensorTypes = getIntent().getIntArrayExtra("sensorTypes");
 
+        Log.i("MeasurementActivity", "Start to load sensors");
+
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         handlers = new ArrayList<SensorHandler>();
         for (int sensorType : sensorTypes) {
             Sensor sensor = sensorManager.getDefaultSensor(sensorType);
             SensorHandler sensorHandler = new SensorHandler(sensorManager, sensor, sensorType);
 
+            Log.i("MeasurementActivity", "Load sensor: " + sensorType + ", " + sensor.getType() + ", " + sensor.getName());
+
             handlers.add(sensorHandler);
         }
-
-//        StaticLabelsFormatter staticLabelsFormatter = new StaticLabelsFormatter(graphView);
-//        staticLabelsFormatter.setHorizontalLabels(new String[] {"test", "test2", "test3"});
-//        staticLabelsFormatter.setVerticalLabels(new String[] {"w", "t", "f"});
-//        graphView.getGridLabelRenderer().setLabelFormatter(staticLabelsFormatter);
 
         MeasurementGraphListViewAdapter adapter = new MeasurementGraphListViewAdapter(getApplicationContext(), handlers);
 
