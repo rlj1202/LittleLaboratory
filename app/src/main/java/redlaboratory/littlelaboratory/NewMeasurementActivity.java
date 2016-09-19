@@ -159,6 +159,7 @@ public class NewMeasurementActivity extends Activity {
                     int[] sensorTypes = new int[checkedItems.size()];
                     for (int i = 0; i < checkedItems.size(); i++) sensorTypes[i] = checkedItems.get(i).getSensor().getType();
                     intent.putExtra("sensorTypes", sensorTypes);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
                     startActivity(intent);
                     finish();
                 }

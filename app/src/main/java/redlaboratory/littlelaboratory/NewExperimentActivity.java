@@ -8,12 +8,10 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Locale;
 
-/**
- * Created by 지수 on 2016-09-03.
- */
 public class NewExperimentActivity extends Activity {
 
     @Override
@@ -34,7 +32,7 @@ public class NewExperimentActivity extends Activity {
 
                 if (!title.isEmpty()) {
                     Intent intent = new Intent();
-                    intent.putExtra("experiment", new Experiment(title, description, addedDate));
+                    intent.putExtra("experiment", new Experiment(-1, title, description, addedDate, new ArrayList<Long>()));
                     setResult(RESULT_OK, intent);
                     finish();
                 } else {

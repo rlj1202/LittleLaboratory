@@ -1,22 +1,32 @@
 package redlaboratory.littlelaboratory;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 
-/**
- * Created by 지수 on 2016-09-02.
- */
 public class Experiment implements Serializable {
 
+    private long id;
     private String title;
     private String description;
     private Calendar addedDate;
+    private ArrayList<Long> measurements;
 
-    public Experiment(String title, String description, Calendar addedDate) {
+    public Experiment(long id, String title, String description, Calendar addedDate, ArrayList<Long> measurements) {
+        this.id = id;
         this.title = title;
         this.description = description;
         this.addedDate = addedDate;
+        this.measurements = measurements;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public long getId() {
+        return id;
     }
 
     public String getTitle() {
@@ -29,6 +39,15 @@ public class Experiment implements Serializable {
 
     public Calendar getAddedDate() {
         return addedDate;
+    }
+
+    public ArrayList<Long> getMeasurements() {
+        return measurements;
+    }
+
+    @Override
+    public String toString() {
+        return "{id: " + id + ", title: " + title + ", description: " + description + ", addedDate: " + addedDate.toString() + ", measurements: " + measurements.toString() + "}";
     }
 
 }

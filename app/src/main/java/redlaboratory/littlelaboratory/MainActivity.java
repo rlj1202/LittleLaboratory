@@ -11,20 +11,23 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
+import com.jjoe64.graphview.series.LineGraphSeries;
+
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private ActionBarDrawerToggle toggle;
     private FloatingActionButton newExperimentFab;
+
+    private LittleLaboratoryDbHelper littleLaboratoryDbHelper;
 
     private ArrayList<Experiment> experiments;
 
@@ -71,12 +74,17 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
 
-        Calendar date = Calendar.getInstance(Locale.KOREA);
-        date.set(1970, Calendar.JANUARY, 1, 0, 0, 0);
-        experiments = new ArrayList<Experiment>();
-        experiments.add(new Experiment("시간에 따른 온도 변화 측정", "feat 서보경쌤", date));
-        experiments.add(new Experiment("전류량에 따른 자기장 세기 변화", "못함 ㅋ", date));
-        experiments.add(new Experiment("2016 2학기 과학자유탐구", "그런거 없음", date));
+        littleLaboratoryDbHelper = new LittleLaboratoryDbHelper(getApplicationContext());
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        experiments = littleLaboratoryDbHelper.selectExperiments();
+        for (Experiment experiment : experiments) Log.i("LittleLaboratory", "Load experiment: " + experiment.toString());
+        for (Measurement measurement : littleLaboratoryDbHelper.selectMeasurements()) Log.i("LittleLaboratory", "Load measurement: " + measurement.toString());
+        for (Series series : littleLaboratoryDbHelper.selectSeries()) Log.i("LittleLaboratory", "Load Series: " + series.toString());
 
         ExperimentListViewAdapter adapter = new ExperimentListViewAdapter(this, R.layout.item_experiment, experiments);
 
@@ -88,11 +96,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 Experiment experiment = (Experiment) adapterView.getItemAtPosition(position);
 
                 Intent intent = new Intent(MainActivity.this, ExperimentActivity.class);
-                intent.putExtra("experiment", experiment);
+                intent.putExtra("experimentId", experiment.getId());
                 startActivity(intent);
-//                Snackbar.make(view, experiment.getClass().getName(), Snackbar.LENGTH_LONG).setAction("Action", null).show();
             }
         });
+
+        Log.i("LittleLaboratory", "MainActivity onResume");
     }
 
     @Override
@@ -102,6 +111,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (resultCode == RESULT_OK) {
             Experiment experiment = (Experiment) data.getSerializableExtra("experiment");
 
+            long id = littleLaboratoryDbHelper.insertExperiment(experiment.getTitle(), experiment.getDescription(), experiment.getAddedDate(), experiment.getMeasurements());
+            experiment.setId(id);
             experiments.add(experiment);
 
             Snackbar.make(this.findViewById(R.id.app_bar_layout), experiment.getTitle() + " 추가됨", Snackbar.LENGTH_LONG).show();
@@ -111,6 +122,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     protected void onPostCreate(@Nullable Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
+
         toggle.syncState();
     }
 
