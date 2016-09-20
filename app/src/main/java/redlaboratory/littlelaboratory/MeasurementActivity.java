@@ -41,7 +41,6 @@ public class MeasurementActivity extends Activity {
 
         public SensorListener(int sensorType) {
             this.sensorType = sensorType;
-            this.values = new float[9];
         }
 
         @Override
@@ -154,7 +153,7 @@ public class MeasurementActivity extends Activity {
 
                         for (int i = 0; i < values; i++) {
                             double second = time * delay / 1000.0D;
-                            double value = sensorListener.values[i];
+                            double value = sensorListener.values != null ? sensorListener.values[i] : 0.0D;
 
                             sensorListener.series[i].appendData(new DataPoint(second, value), true, 100);
                             try {

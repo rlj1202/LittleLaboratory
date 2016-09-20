@@ -1,7 +1,5 @@
 package redlaboratory.littlelaboratory;
 
-import android.app.Activity;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
@@ -9,6 +7,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.Layout;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -16,6 +15,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.Button;
+import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -26,7 +27,6 @@ import com.jjoe64.graphview.series.LineGraphSeries;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 
 public class ExperimentActivity extends AppCompatActivity {
 //
@@ -70,10 +70,12 @@ public class ExperimentActivity extends AppCompatActivity {
 
     public static class MeasurementsListViewItem {
 
+        private Measurement measurement;
         private int sensorType;
         private ArrayList<LineGraphSeries> series;
 
-        public MeasurementsListViewItem(int sensorType, ArrayList<LineGraphSeries> series) {
+        public MeasurementsListViewItem(Measurement measurement, int sensorType, ArrayList<LineGraphSeries> series) {
+            this.measurement = measurement;
             this.sensorType = sensorType;
             this.series = series;
         }
@@ -82,16 +84,12 @@ public class ExperimentActivity extends AppCompatActivity {
 
     public static class MeasurementsListViewAdapter extends BaseAdapter {
 
-        private Context context;
+        private ExperimentActivity context;
         private ArrayList<MeasurementsListViewItem> items;
 
-        private LayoutInflater inflater;
-
-        public MeasurementsListViewAdapter(Context context, ArrayList<MeasurementsListViewItem> items) {
+        public MeasurementsListViewAdapter(ExperimentActivity context, ArrayList<MeasurementsListViewItem> items) {
             this.context = context;
             this.items = items;
-
-            inflater = (LayoutInflater) context.getSystemService(LAYOUT_INFLATER_SERVICE);
         }
 
         @Override
@@ -102,15 +100,20 @@ public class ExperimentActivity extends AppCompatActivity {
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
             if (view == null) {
-                view = inflater.inflate(R.layout.item_measurements, null);
+                view = context.inflater.inflate(R.layout.item_measurements, null);
             }
 
-            MeasurementsListViewItem item = items.get(i);
+            final MeasurementsListViewItem item = items.get(i);
 
             GraphView graphView = (GraphView) view.findViewById(R.id.graph);
             graphView.removeAllSeries();
             for (LineGraphSeries series : item.series) graphView.addSeries(series);
             graphView.setBackgroundColor(0xff424242);
+            graphView.getGridLabelRenderer().setHorizontalLabelsColor(0xffffffff);
+            graphView.getGridLabelRenderer().setVerticalLabelsColor(0xffffffff);
+            graphView.getGridLabelRenderer().setGridColor(0xff888888);
+            graphView.getLegendRenderer().setTextColor(0xffffffff);
+            graphView.setTitleColor(0xffffffff);
             graphView.getViewport().setXAxisBoundsManual(true);
             graphView.getViewport().setYAxisBoundsManual(true);
             graphView.getViewport().setMinX(0);
@@ -121,6 +124,38 @@ public class ExperimentActivity extends AppCompatActivity {
             graphView.getLegendRenderer().setAlign(LegendRenderer.LegendAlign.TOP);
             graphView.getGridLabelRenderer().setLabelVerticalWidth(40);
             graphView.setTitle(context.getString(SensorInformation.fromSensorType(item.sensorType).getTitleStringId()));
+
+            Button viewButton = (Button) view.findViewById(R.id.view);
+            Button deleteButton = (Button) view.findViewById(R.id.delete);
+
+            viewButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+
+                }
+            });
+            deleteButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    AlertDialog.Builder ab = new AlertDialog.Builder(context);
+                    ab.setMessage(R.string.delete_confirm)
+                            .setCancelable(true)
+                            .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    context.deleteMeasurementItem(item);
+                                }
+                            }).setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.cancel();
+                                }
+                            });
+                    AlertDialog alertDialog = ab.create();
+                    alertDialog.setTitle(R.string.delete);
+                    alertDialog.show();
+                }
+            });
 
             return view;
         }
@@ -140,6 +175,7 @@ public class ExperimentActivity extends AppCompatActivity {
     private Experiment experiment;
     private LittleLaboratoryDbHelper dbHelper;
     private ArrayList<MeasurementsListViewItem> items;
+    private LayoutInflater inflater;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -148,6 +184,7 @@ public class ExperimentActivity extends AppCompatActivity {
 
         Log.i("LittleLaboratory", "ExperimentActivity onCreate");
 
+        inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
         dbHelper = new LittleLaboratoryDbHelper(getApplicationContext());
         long experimentId = getIntent().getLongExtra("experimentId", -1);
         experiment = dbHelper.selectExperiment(experimentId);
@@ -159,16 +196,20 @@ public class ExperimentActivity extends AppCompatActivity {
         TextView description = (TextView) findViewById(R.id.description);
         description.setText(experiment.getDescription());
 
-        items = new ArrayList<MeasurementsListViewItem>();
-        for (long measurementId : experiment.getMeasurements()) {
-            Log.i("LittleLaboratory", "Load measurementListViewItem: " + measurementId);
-            items.add(getMeasurementsListViewItem(measurementId));
-        }
+        items = new ArrayList<>();
 
-        MeasurementsListViewAdapter adapter = new MeasurementsListViewAdapter(getApplicationContext(), items);
+        MeasurementsListViewAdapter adapter = new MeasurementsListViewAdapter(this, items);
 
         ListView measurementListView = (ListView) findViewById(R.id.measurements);
         measurementListView.setAdapter(adapter);
+//        measurementListView.setEmptyView(inflater.inflate(R.layout.item_measurements_empty, null));
+        measurementListView.setEmptyView(findViewById(R.id.description));
+
+        for (long measurementId : experiment.getMeasurements()) {
+            Log.i("LittleLaboratory", "Load measurementListViewItem: " + measurementId);
+            MeasurementsListViewItem item = getMeasurementsListViewItem(measurementId);
+            addMeasurementItem(item);
+        }
 
         FloatingActionButton newMeasurementFab = (FloatingActionButton) findViewById(R.id.newmeasurementfab);
         newMeasurementFab.setOnClickListener(new View.OnClickListener() {
@@ -185,8 +226,52 @@ public class ExperimentActivity extends AppCompatActivity {
 //        recyclerView.setAdapter(new MyAdapter(new String[] {"test", "test2"}));
     }
 
+    private void addMeasurementItem(MeasurementsListViewItem item) {
+        if (item == null) return;
+
+        items.add(item);
+        ListView listView = (ListView) findViewById(R.id.measurements);
+        setListViewHeightBasedOnChildren(listView);
+        ((BaseAdapter) listView.getAdapter()).notifyDataSetChanged();
+    }
+
+    private void deleteMeasurementItem(MeasurementsListViewItem item) {
+        items.remove(item);
+        dbHelper.deleteMeasurementInExperiment(experiment.getId(), item.measurement.getId());
+        ListView listView = (ListView) findViewById(R.id.measurements);
+        setListViewHeightBasedOnChildren(listView);
+        ((BaseAdapter) listView.getAdapter()).notifyDataSetChanged();
+    }
+
+    /**
+     *
+     * @see <a href="http://stackoverflow.com/questions/1661293/why-do-listview-items-not-grow-to-wrap-their-content">StackOverflow original post</a>
+     * @param listView listView
+     */
+    private static void setListViewHeightBasedOnChildren(ListView listView) {
+        ListAdapter listAdapter = listView.getAdapter();
+        if (listAdapter == null) {
+            // pre-condition
+            return;
+        }
+
+        int totalHeight = 0;
+        for (int i = 0; i < listAdapter.getCount(); i++) {
+            View listItem = listAdapter.getView(i, null, listView);
+            listItem.measure(0, 0);
+            totalHeight += listItem.getMeasuredHeight();
+        }
+
+        ViewGroup.LayoutParams params = listView.getLayoutParams();
+        params.height = totalHeight + (listView.getDividerHeight() * (listAdapter.getCount() - 1));
+        listView.setLayoutParams(params);
+        listView.requestLayout();
+    }
+
     private MeasurementsListViewItem getMeasurementsListViewItem(long measurementId) {
         Measurement measurement = dbHelper.selectMeasurement(measurementId);
+
+        if (measurement == null) return null;
 
         int sensorType = measurement.getSensorType();
         ArrayList<Long> seriesIds = measurement.getSeriesIds();
@@ -194,7 +279,7 @@ public class ExperimentActivity extends AppCompatActivity {
         String[] valueNames = SensorInformation.fromSensorType(sensorType).getValueNames();
         int[] colors = SensorInformation.fromSensorType(sensorType).getColors();
 
-        MeasurementsListViewItem item = new MeasurementsListViewItem(sensorType, new ArrayList<LineGraphSeries>());
+        MeasurementsListViewItem item = new MeasurementsListViewItem(measurement, sensorType, new ArrayList<LineGraphSeries>());
 
         for (int i = 0; i < seriesIds.size(); i++) {
             long seriesId = seriesIds.get(i);
@@ -223,10 +308,10 @@ public class ExperimentActivity extends AppCompatActivity {
 
             for (long l : measurementIds) {
                 experiment.getMeasurements().add(l);
-                items.add(getMeasurementsListViewItem(l));
-                ListView measurementListView = (ListView) findViewById(R.id.measurements);
-                ((BaseAdapter) measurementListView.getAdapter()).notifyDataSetChanged();
-                dbHelper.updateExperiment(experiment.getId(), experiment.getTitle(), experiment.getDescription(), experiment.getAddedDate(), experiment.getMeasurements());
+                dbHelper.updateExperiment(experiment);
+
+                MeasurementsListViewItem item = getMeasurementsListViewItem(l);
+                addMeasurementItem(item);
             }
         }
     }

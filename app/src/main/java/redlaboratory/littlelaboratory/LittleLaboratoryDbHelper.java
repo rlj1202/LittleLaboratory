@@ -147,22 +147,22 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
         return newRowId;
     }
 
-    public void updateExperiment(long id, String title, String description, Calendar calendar, ArrayList<Long> measurementIds) {
+    public void updateExperiment(Experiment experiment) {
         SQLiteDatabase db = getWritableDatabase();
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(baos);
-        try { for (long l : measurementIds) dos.writeLong(l); } catch (IOException e) { e.printStackTrace(); }
+        try { for (long l : experiment.getMeasurements()) dos.writeLong(l); } catch (IOException e) { e.printStackTrace(); }
 
         ContentValues values = new ContentValues();
-        values.put(ExperimentEntry.COLUMN_NAME_ID, id);
-        values.put(ExperimentEntry.COLUMN_NAME_TITLE, title);
-        values.put(ExperimentEntry.COLUMN_NAME_DESCRIPTION, description);
-        values.put(ExperimentEntry.COLUMN_NAME_DATE, calendar.getTimeInMillis());
+        values.put(ExperimentEntry.COLUMN_NAME_ID, experiment.getId());
+        values.put(ExperimentEntry.COLUMN_NAME_TITLE, experiment.getTitle());
+        values.put(ExperimentEntry.COLUMN_NAME_DESCRIPTION, experiment.getDescription());
+        values.put(ExperimentEntry.COLUMN_NAME_DATE, experiment.getAddedDate().getTimeInMillis());
         values.put(ExperimentEntry.COLUMN_NAME_MEASUREMENTS, baos.toByteArray());
 
         String selection = ExperimentEntry.COLUMN_NAME_ID + " LIKE ?";
-        String[] selectionArgs = { String.valueOf(id) };
+        String[] selectionArgs = { String.valueOf(experiment.getId()) };
 
         db.update(ExperimentEntry.TABLE_NAME, values, selection, selectionArgs);
     }
@@ -181,8 +181,17 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
         db.delete(ExperimentEntry.TABLE_NAME, selection, selectionArgs);
     }
 
+    public void deleteMeasurementInExperiment(long experimentId, long measurementId) {
+        Experiment experiment = selectExperiment(experimentId);
+        experiment.getMeasurements().remove(measurementId);
+        updateExperiment(experiment);
+
+        deleteMeasurement(measurementId);
+    }
+
     public void deleteMeasurement(long id) {
         Measurement measurement = selectMeasurement(id);
+        if (measurement == null) return;
 
         for (long seriesId : measurement.getSeriesIds()) deleteSeries(seriesId);
 
@@ -327,6 +336,8 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
 
         Cursor c = db.query(MeasurementEntry.TABLE_NAME, null, selection, selectionArgs, null, null, null);
         c.moveToNext();
+
+        if (c.getCount() == 0) return null;
 
         byte[] rawSeriesIds = c.getBlob(c.getColumnIndex(MeasurementEntry.COLUMN_NAME_SERIES_IDS));
 
