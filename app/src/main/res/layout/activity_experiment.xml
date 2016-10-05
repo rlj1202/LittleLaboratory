@@ -40,7 +40,7 @@
                     android:layout_marginTop="8dp"
                     android:layout_marginLeft="8dp"
                     android:layout_marginRight="8dp"
-                    card_view:contentPadding="13dp"
+                    card_view:contentPadding="8dp"
                     card_view:cardCornerRadius="2dp">
                     <LinearLayout
                         android:orientation="vertical"
@@ -49,14 +49,15 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
                             android:textSize="20sp"
                             android:textColor="#000000"
-                            android:text="@string/description"/>
+                            android:text="@string/description"
+                            android:textStyle="bold" />
                         <TextView
                             android:id="@+id/description"
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="10dp"/>
+                            android:layout_height="wrap_content" />
                     </LinearLayout>
                 </android.support.v7.widget.CardView>
                 <android.support.v7.widget.CardView
@@ -66,7 +67,7 @@
                     android:layout_marginLeft="8dp"
                     android:layout_marginRight="8dp"
                     android:layout_marginBottom="8dp"
-                    card_view:contentPadding="13dp"
+                    card_view:contentPadding="8dp"
                     card_view:cardCornerRadius="2dp">
                     <LinearLayout
                         android:orientation="vertical"
@@ -75,14 +76,15 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
                             android:text="@string/measurement"
                             android:textSize="20sp"
-                            android:textColor="#000000"/>
+                            android:textColor="#000000"
+                            android:textStyle="bold"/>
                         <ListView
                             android:id="@+id/measurements"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="10dp"
                             android:divider="@null"
                             android:dividerHeight="0dp"/>
                     </LinearLayout>

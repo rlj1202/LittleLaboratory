@@ -200,10 +200,12 @@ public class ExperimentActivity extends AppCompatActivity {
 
         MeasurementsListViewAdapter adapter = new MeasurementsListViewAdapter(this, items);
 
+
         ListView measurementListView = (ListView) findViewById(R.id.measurements);
         measurementListView.setAdapter(adapter);
-//        measurementListView.setEmptyView(inflater.inflate(R.layout.item_measurements_empty, null));
-        measurementListView.setEmptyView(findViewById(R.id.description));
+        View emptyView = getLayoutInflater().inflate(R.layout.item_measurements_empty, measurementListView, false);
+        ((ViewGroup) measurementListView.getParent()).addView(emptyView);
+        measurementListView.setEmptyView(emptyView);
 
         for (long measurementId : experiment.getMeasurements()) {
             Log.i("LittleLaboratory", "Load measurementListViewItem: " + measurementId);
