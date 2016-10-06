@@ -6,18 +6,25 @@
 
     <string name="new_experiment">새 실험</string>
     <string name="new_measurement">새 측정</string>
+    <string name="new_analyze">새 분석</string>
     <string name="title">제목</string>
     <string name="description">설명</string>
     <string name="done">완료</string>
     <string name="view">보기</string>
     <string name="experiment">실험</string>
     <string name="measurement">측정</string>
+    <string name="analyze">분석</string>
     <string name="start">시작</string>
     <string name="sensor">센서</string>
     <string name="time">시간</string>
     <string name="delete">삭제</string>
+    <string name="select">선택</string>
     <string name="yes">예</string>
     <string name="no">아니오</string>
+    <string name="add">추가</string>
+
+    <string name="analyze_text1">에 대해서</string>
+    <string name="analyze_text2">를 분석</string>
 
     <string name="no_items_yet">아직 항목이 없습니다.</string>
 

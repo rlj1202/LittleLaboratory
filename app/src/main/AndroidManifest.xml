@@ -2,10 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="redlaboratory.littlelaboratory">
 
-    <uses-permission
-        android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission
-        android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <application
         android:allowBackup="true"
@@ -24,6 +22,8 @@
         <activity android:name=".ExperimentActivity" />
         <activity android:name=".NewMeasurementActivity" />
         <activity android:name=".MeasurementActivity" />
+        <activity android:name=".AnalyzeActivity" />
+        <activity android:name=".NewAnalyzeActivity"></activity>
     </application>
 
 </manifest>

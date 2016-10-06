@@ -92,15 +92,30 @@
             </LinearLayout>
         </ScrollView>
 
-        <android.support.design.widget.FloatingActionButton
-            android:id="@+id/newmeasurementfab"
+        <LinearLayout
+            android:orientation="vertical"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom|right"
-            android:layout_margin="16dp"
-            android:clickable="true"
-            android:src="@drawable/ic_add_white_24dp"
-            app:fabSize="normal"
-            app:backgroundTint="@android:color/holo_red_dark"/>
+            android:layout_gravity="right|bottom"
+            >
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/newAnalyzeFab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="16dp"
+                android:layout_marginRight="16dp"
+                android:clickable="true"
+                android:src="@drawable/ic_add_white_24dp"
+                app:fabSize="normal"/>
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/newmeasurementfab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                android:clickable="true"
+                android:src="@drawable/ic_add_white_24dp"
+                app:fabSize="normal"
+                app:backgroundTint="@android:color/holo_red_dark"/>
+        </LinearLayout>
     </android.support.design.widget.CoordinatorLayout>
 </LinearLayout>

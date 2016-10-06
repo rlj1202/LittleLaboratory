@@ -7,7 +7,6 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.text.Layout;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -16,6 +15,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -71,13 +72,13 @@ public class ExperimentActivity extends AppCompatActivity {
     public static class MeasurementsListViewItem {
 
         private Measurement measurement;
-        private int sensorType;
         private ArrayList<LineGraphSeries> series;
+        private boolean checked;
 
-        public MeasurementsListViewItem(Measurement measurement, int sensorType, ArrayList<LineGraphSeries> series) {
+        public MeasurementsListViewItem(Measurement measurement, ArrayList<LineGraphSeries> series) {
             this.measurement = measurement;
-            this.sensorType = sensorType;
             this.series = series;
+            this.checked = false;
         }
 
     }
@@ -123,10 +124,11 @@ public class ExperimentActivity extends AppCompatActivity {
             graphView.getLegendRenderer().setVisible(true);
             graphView.getLegendRenderer().setAlign(LegendRenderer.LegendAlign.TOP);
             graphView.getGridLabelRenderer().setLabelVerticalWidth(40);
-            graphView.setTitle(context.getString(SensorInformation.fromSensorType(item.sensorType).getTitleStringId()));
+            graphView.setTitle(context.getString(SensorInformation.fromSensorType(item.measurement.getSensorType()).getTitleStringId()));
 
             Button viewButton = (Button) view.findViewById(R.id.view);
             Button deleteButton = (Button) view.findViewById(R.id.delete);
+            CheckBox selectButton = (CheckBox) view.findViewById(R.id.select);
 
             viewButton.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -156,6 +158,12 @@ public class ExperimentActivity extends AppCompatActivity {
                     alertDialog.show();
                 }
             });
+            selectButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    item.checked = isChecked;
+                }
+            });
 
             return view;
         }
@@ -171,6 +179,9 @@ public class ExperimentActivity extends AppCompatActivity {
         }
 
     }
+
+    private static final int REQUEST_NEW_MEASUREMENT = 0;
+    private static final int REQUEST_NEW_ANALYZE = 1;
 
     private Experiment experiment;
     private LittleLaboratoryDbHelper dbHelper;
@@ -218,7 +229,24 @@ public class ExperimentActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(ExperimentActivity.this, NewMeasurementActivity.class);
-                startActivityForResult(intent, 0);
+                startActivityForResult(intent, REQUEST_NEW_MEASUREMENT);
+            }
+        });
+
+        FloatingActionButton newAnalyzeFab = (FloatingActionButton) findViewById(R.id.newAnalyzeFab);
+        newAnalyzeFab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ArrayList<Long> measurements = new ArrayList<Long>();
+
+                for (MeasurementsListViewItem item : items) {
+                    if (item.checked) measurements.add(item.measurement.getId());
+                }
+
+                Intent intent = new Intent(ExperimentActivity.this, NewAnalyzeActivity.class);
+                intent.putExtra("experimentId", experiment.getId());
+                intent.putExtra("measurementIds", measurements.toArray(new Long[] {}));
+                startActivityForResult(intent, REQUEST_NEW_ANALYZE);
             }
         });
 
@@ -275,13 +303,12 @@ public class ExperimentActivity extends AppCompatActivity {
 
         if (measurement == null) return null;
 
-        int sensorType = measurement.getSensorType();
         ArrayList<Long> seriesIds = measurement.getSeriesIds();
 
-        String[] valueNames = SensorInformation.fromSensorType(sensorType).getValueNames();
-        int[] colors = SensorInformation.fromSensorType(sensorType).getColors();
+        String[] valueNames = SensorInformation.fromSensorType(measurement.getSensorType()).getValueNames();
+        int[] colors = SensorInformation.fromSensorType(measurement.getSensorType()).getColors();
 
-        MeasurementsListViewItem item = new MeasurementsListViewItem(measurement, sensorType, new ArrayList<LineGraphSeries>());
+        MeasurementsListViewItem item = new MeasurementsListViewItem(measurement, new ArrayList<LineGraphSeries>());
 
         for (int i = 0; i < seriesIds.size(); i++) {
             long seriesId = seriesIds.get(i);
@@ -303,17 +330,24 @@ public class ExperimentActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (resultCode == RESULT_OK) {
-            long[] measurementIds = data.getLongArrayExtra("measurementIds");
+        if (requestCode == REQUEST_NEW_MEASUREMENT) {
+            if (resultCode == RESULT_OK) {
+                long[] measurementIds = data.getLongArrayExtra("measurementIds");
 
-            Log.i("LittleLaboratory", "Get measurement ids: " + Arrays.toString(measurementIds));
+                Log.i("LittleLaboratory", "Get measurement ids: " + Arrays.toString(measurementIds));
 
-            for (long l : measurementIds) {
-                experiment.getMeasurements().add(l);
-                dbHelper.updateExperiment(experiment);
+                for (long l : measurementIds) {
+                    experiment.getMeasurements().add(l);
+                    dbHelper.updateExperiment(experiment);
 
-                MeasurementsListViewItem item = getMeasurementsListViewItem(l);
-                addMeasurementItem(item);
+                    MeasurementsListViewItem item = getMeasurementsListViewItem(l);
+                    addMeasurementItem(item);
+                }
+            }
+        }
+        if (requestCode == REQUEST_NEW_ANALYZE) {
+            if (resultCode == RESULT_OK) {
+
             }
         }
     }

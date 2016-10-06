@@ -271,6 +271,9 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
                 null,
                 null
         );
+
+        if (c.getCount() == 0) return null;
+
         c.moveToNext();
 
         String title = c.getString(c.getColumnIndex(ExperimentEntry.COLUMN_NAME_TITLE));
@@ -335,9 +338,10 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
         String[] selectionArgs = { String.valueOf(id) };
 
         Cursor c = db.query(MeasurementEntry.TABLE_NAME, null, selection, selectionArgs, null, null, null);
-        c.moveToNext();
 
         if (c.getCount() == 0) return null;
+
+        c.moveToNext();
 
         byte[] rawSeriesIds = c.getBlob(c.getColumnIndex(MeasurementEntry.COLUMN_NAME_SERIES_IDS));
 
@@ -396,11 +400,10 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
         String[] selectionArgs = { String.valueOf(id) };
 
         Cursor c = db.query(SeriesEntry.TABLE_NAME, null, selection, selectionArgs, null, null, null);
-        c.moveToNext();
 
-        if (c.getCount() == 0) {
-            return null;
-        }
+        if (c.getCount() == 0) return null;
+
+        c.moveToNext();
 
         byte[] rawData = c.getBlob(c.getColumnIndex(SeriesEntry.COLUMN_NAME_DATA));
 
