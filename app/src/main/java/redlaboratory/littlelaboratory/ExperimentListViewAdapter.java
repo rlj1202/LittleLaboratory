@@ -10,6 +10,8 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.Calendar;
 
+import redlaboratory.littlelaboratory.db.Experiment;
+
 public class ExperimentListViewAdapter extends BaseAdapter {
 
     private LayoutInflater inflater;

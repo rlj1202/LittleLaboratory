@@ -1,11 +1,10 @@
-package redlaboratory.littlelaboratory;
+package redlaboratory.littlelaboratory.db;
 
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.icu.util.Measure;
 import android.os.Environment;
 import android.provider.BaseColumns;
 import android.util.Log;
@@ -21,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 
 public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
@@ -28,25 +28,28 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
     public static abstract class ExperimentEntry implements BaseColumns {
         public static final String TABLE_NAME = "experiments";
         public static final String COLUMN_NAME_ID = "id";
-        public static final String COLUMN_NAME_TITLE = "title";
-        public static final String COLUMN_NAME_DESCRIPTION = "description";
-        public static final String COLUMN_NAME_DATE = "date";
+        public static final String COLUMN_NAME_TITLE = "title";// String
+        public static final String COLUMN_NAME_DESCRIPTION = "description";// String
+        public static final String COLUMN_NAME_DATE = "date";// long
         public static final String COLUMN_NAME_MEASUREMENTS = "measurementIds";
     }
 
     public static abstract class MeasurementEntry implements BaseColumns {
         public static final String TABLE_NAME = "measurements";
         public static final String COLUMN_NAME_ID = "id";
-        public static final String COLUMN_NAME_SERIES_IDS = "series_ids";
+        public static final String COLUMN_NAME_TITLE = "title";// String
+        public static final String COLUMN_NAME_SERIES_IDS = "series_ids";// long array
     }
 
     public static abstract class SeriesEntry implements BaseColumns {
         public static final String TABLE_NAME = "series";
         public static final String COLUMN_NAME_ID = "id";
-        public static final String COLUMN_NAME_DATA = "data";
+        public static final String COLUMN_NAME_TITLE = "title";// String
+        public static final String COLUMN_NAME_COLOR = "color";// int
+        public static final String COLUMN_NAME_DATA = "data";// blob
     }
 
-    public static final int DATABASE_VERSION = 1;
+    public static final int DATABASE_VERSION = 2;
     public static final String DATABASE_NAME = "LittleLaboratory.db";
 
     private static final String NULL_TYPE = " NULL";
@@ -123,11 +126,16 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
         return newRowId;
     }
 
-    public long insertMeasurement(byte[] data) {
+    public long insertMeasurement(String title, long[] seriesIds) {
         SQLiteDatabase db = getWritableDatabase();
 
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(baos);
+        try { for (long seriesId : seriesIds) dos.writeLong(seriesId); } catch (IOException e) {}
+
         ContentValues values = new ContentValues();
-        values.put(MeasurementEntry.COLUMN_NAME_SERIES_IDS, data);
+        values.put(MeasurementEntry.COLUMN_NAME_TITLE, title);
+        values.put(MeasurementEntry.COLUMN_NAME_SERIES_IDS, baos.toByteArray());
 
         long newRowId = db.insert(MeasurementEntry.TABLE_NAME, null, values);
 
@@ -136,13 +144,17 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
         return newRowId;
     }
 
-    public long insertSeries(byte[] data) {
+    public long insertSeries(String title, int color, byte[] rawData) {
         SQLiteDatabase db = getWritableDatabase();
 
         ContentValues values = new ContentValues();
-        values.put(SeriesEntry.COLUMN_NAME_DATA, data);
+        values.put(SeriesEntry.COLUMN_NAME_TITLE, title);
+        values.put(SeriesEntry.COLUMN_NAME_COLOR, color);
+        values.put(SeriesEntry.COLUMN_NAME_DATA, rawData);
 
         long newRowId = db.insert(SeriesEntry.TABLE_NAME, null, values);
+
+        Log.i("LittleLaboratory", "insertSeries: " + newRowId);
 
         return newRowId;
     }
@@ -307,14 +319,12 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
 
         while (c.moveToNext()) {
             long id = c.getLong(c.getColumnIndex(MeasurementEntry.COLUMN_NAME_ID));
+            String title = c.getString(c.getColumnIndex(MeasurementEntry.COLUMN_NAME_TITLE));
             byte[] rawSeriesIds = c.getBlob(c.getColumnIndex(MeasurementEntry.COLUMN_NAME_SERIES_IDS));
 
             DataInputStream dis = new DataInputStream(new ByteArrayInputStream(rawSeriesIds));
-            int sensorType = 0;
-            ArrayList<Long> seriesIds = new ArrayList<Long>();
+            ArrayList<Long> seriesIds = new ArrayList<>();
             try {
-                sensorType = dis.readInt();
-
                 while (dis.available() > 0) {
                     seriesIds.add(dis.readLong());
                 }
@@ -322,7 +332,7 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
                 e.printStackTrace();
             }
 
-            Measurement measurement = new Measurement(id, sensorType, seriesIds);
+            Measurement measurement = new Measurement(id, title, seriesIds);
             result.add(measurement);
         }
 
@@ -343,26 +353,22 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
 
         c.moveToNext();
 
+        String title = c.getString(c.getColumnIndex(MeasurementEntry.COLUMN_NAME_TITLE));
         byte[] rawSeriesIds = c.getBlob(c.getColumnIndex(MeasurementEntry.COLUMN_NAME_SERIES_IDS));
 
         DataInputStream dis = new DataInputStream(new ByteArrayInputStream(rawSeriesIds));
-        int sensorType = 0;
-        ArrayList<Long> seriesIds = new ArrayList<Long>();
+        ArrayList<Long> seriesIds = new ArrayList<>();
         try {
-            sensorType = dis.readInt();
-
             while (dis.available() > 0) {
                 seriesIds.add(dis.readLong());
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        } catch (IOException e) {}
 
-        return new Measurement(id, sensorType, seriesIds);
+        return new Measurement(id, title, seriesIds);
     }
 
     public ArrayList<Series> selectSeries() {
-        ArrayList<Series> result = new ArrayList<Series>();
+        ArrayList<Series> result = new ArrayList<>();
 
         SQLiteDatabase db = getReadableDatabase();
 
@@ -370,10 +376,12 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
 
         while (c.moveToNext()) {
             long id = c.getLong(c.getColumnIndex(SeriesEntry.COLUMN_NAME_ID));
+            String title = c.getString(c.getColumnIndex(SeriesEntry.COLUMN_NAME_TITLE));
+            int color = c.getInt(c.getColumnIndex(SeriesEntry.COLUMN_NAME_COLOR));
             byte[] rawData = c.getBlob(c.getColumnIndex(SeriesEntry.COLUMN_NAME_DATA));
 
             DataInputStream dis = new DataInputStream(new ByteArrayInputStream(rawData));
-            ArrayList<Double> data = new ArrayList<Double>();
+            ArrayList<Double> data = new ArrayList<>();
             try {
                 while (dis.available() > 0) {
                     data.add(dis.readDouble());
@@ -382,18 +390,18 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
                 e.printStackTrace();
             }
 
-            LineGraphSeries<DataPoint> series = new LineGraphSeries<DataPoint>();
+            LineGraphSeries<DataPoint> series = new LineGraphSeries<>();
             for (Iterator<Double> it = data.iterator(); it.hasNext();) {
                 series.appendData(new DataPoint(it.next(), it.next()), true, data.size() / 2);
             }
 
-            result.add(new Series(id, series));
+            result.add(new Series(id, title, color, data, series));
         }
 
         return result;
     }
 
-    public LineGraphSeries<DataPoint> selectSeries(long id) {
+    public Series selectSeries(long id) {
         SQLiteDatabase db = getReadableDatabase();
 
         String selection = SeriesEntry.COLUMN_NAME_ID + " LIKE ?";
@@ -405,10 +413,12 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
 
         c.moveToNext();
 
+        String title = c.getString(c.getColumnIndex(SeriesEntry.COLUMN_NAME_TITLE));
+        int color = c.getInt(c.getColumnIndex(SeriesEntry.COLUMN_NAME_COLOR));
         byte[] rawData = c.getBlob(c.getColumnIndex(SeriesEntry.COLUMN_NAME_DATA));
 
         DataInputStream dis = new DataInputStream(new ByteArrayInputStream(rawData));
-        ArrayList<Double> data = new ArrayList<Double>();
+        ArrayList<Double> data = new ArrayList<>();
         try {
             while (dis.available() > 0) {
                 data.add(dis.readDouble());
@@ -417,12 +427,14 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
             e.printStackTrace();
         }
 
-        LineGraphSeries<DataPoint> series = new LineGraphSeries<DataPoint>();
+        LineGraphSeries<DataPoint> series = new LineGraphSeries<>();
         for (Iterator<Double> it = data.iterator(); it.hasNext();) {
             series.appendData(new DataPoint(it.next(), it.next()), true, data.size() / 2);
         }
+        series.setTitle(title);
+        series.setColor(color);
 
-        return series;
+        return new Series(id, title, color, data, series);
     }
 
 }

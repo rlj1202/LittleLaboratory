@@ -1,4 +1,4 @@
-package redlaboratory.littlelaboratory;
+package redlaboratory.littlelaboratory.db;
 
 import java.io.Serializable;
 import java.util.ArrayList;

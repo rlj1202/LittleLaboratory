@@ -22,6 +22,10 @@
     <string name="yes">예</string>
     <string name="no">아니오</string>
     <string name="add">추가</string>
+    <string name="cancle">취소</string>
+
+    <string name="derivative">미분</string>
+    <string name="integral">적분</string>
 
     <string name="analyze_text1">에 대해서</string>
     <string name="analyze_text2">를 분석</string>

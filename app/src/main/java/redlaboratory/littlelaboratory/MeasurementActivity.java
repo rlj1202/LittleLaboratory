@@ -17,18 +17,13 @@ import android.widget.ListView;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInput;
-import java.io.DataInputStream;
-import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.nio.DoubleBuffer;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
-import java.util.Locale;
+
+import redlaboratory.littlelaboratory.db.LittleLaboratoryDbHelper;
 
 public class MeasurementActivity extends Activity {
 
@@ -96,7 +91,7 @@ public class MeasurementActivity extends Activity {
                 newSeries.setTitle(valueNames[i]);
             }
 
-            sensorManager.registerListener(sensorListener, sensor, SensorManager.SENSOR_DELAY_NORMAL);
+            sensorManager.registerListener(sensorListener, sensor, SensorManager.SENSOR_DELAY_GAME);
 
             Log.i("LittleLaboratory", "Load sensor: " + sensorType + ", " + sensor.getType() + ", " + sensor.getName());
 
@@ -115,21 +110,18 @@ public class MeasurementActivity extends Activity {
                 for (int i = 0; i < listeners.size(); i++) {
                     SensorListener listener = listeners.get(i);
 
+                    String sensorName = getString(SensorInformation.fromSensorType(listener.sensorType).getTitleStringId());
                     int values = SensorInformation.fromSensorType(listener.sensorType).getValues();
-                    ByteArrayOutputStream sensorTypeAndIds = new ByteArrayOutputStream();
-                    DataOutputStream dos = new DataOutputStream(sensorTypeAndIds);
+                    String[] valueNames = SensorInformation.fromSensorType(listener.sensorType).getValueNames();
+                    int[] colors = SensorInformation.fromSensorType(listener.sensorType).getColors();
 
-                    try {
-                        dos.writeInt(listener.sensorType);
+                    long[] seriesIds = new long[values];
 
-                        for (int j = 0; j < values; j++) {
-                            dos.writeLong(littleLaboratoryDbHelper.insertSeries(listener.datas[j].toByteArray()));
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    for (int j = 0; j < values; j++) {
+                        seriesIds[j] = littleLaboratoryDbHelper.insertSeries(valueNames[j], colors[j], listener.datas[j].toByteArray());
                     }
 
-                    long measurementId = littleLaboratoryDbHelper.insertMeasurement(sensorTypeAndIds.toByteArray());
+                    long measurementId = littleLaboratoryDbHelper.insertMeasurement(sensorName, seriesIds);
                     measurementIds[i] = measurementId;
                 }
 
@@ -148,8 +140,8 @@ public class MeasurementActivity extends Activity {
                 if (measure) {
                     for (SensorListener sensorListener : listeners) {
                         int values = SensorInformation.fromSensorType(sensorListener.sensorType).getValues();
-                        String[] valueNames = SensorInformation.fromSensorType(sensorListener.sensorType).getValueNames();
-                        int[] colors = SensorInformation.fromSensorType(sensorListener.sensorType).getColors();
+//                        String[] valueNames = DataTypeHolder.getDataType(sensorListener.sensorType).getValueNames();
+//                        int[] colors = DataTypeHolder.getDataType(sensorListener.sensorType).getColors();
 
                         for (int i = 0; i < values; i++) {
                             double second = time * delay / 1000.0D;

@@ -27,7 +27,7 @@
                 android:orientation="horizontal">
                 <Button
                     android:id="@+id/view"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:background="@android:color/transparent"
@@ -36,16 +36,25 @@
                     android:shadowColor="@android:color/transparent"/>
                 <Button
                     android:id="@+id/delete"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:background="@android:color/transparent"
                     android:text="@string/delete"
                     android:textColor="@android:color/white"
                     android:shadowColor="@android:color/transparent"/>
+                <Button
+                    android:id="@+id/analyze"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:text="@string/analyze"
+                    android:textColor="@android:color/white"
+                    android:shadowColor="@android:color/transparent"/>
                 <CheckBox
                     android:id="@+id/select"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:background="@android:color/transparent"

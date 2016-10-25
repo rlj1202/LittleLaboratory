@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Locale;
 
+import redlaboratory.littlelaboratory.db.Experiment;
+
 public class NewExperimentActivity extends Activity {
 
     @Override

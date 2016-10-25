@@ -26,8 +26,18 @@ import com.jjoe64.graphview.LegendRenderer;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+
+import redlaboratory.littlelaboratory.analyze.Analyze;
+import redlaboratory.littlelaboratory.db.Experiment;
+import redlaboratory.littlelaboratory.db.LittleLaboratoryDbHelper;
+import redlaboratory.littlelaboratory.db.Measurement;
+import redlaboratory.littlelaboratory.db.Series;
 
 public class ExperimentActivity extends AppCompatActivity {
 //
@@ -124,10 +134,11 @@ public class ExperimentActivity extends AppCompatActivity {
             graphView.getLegendRenderer().setVisible(true);
             graphView.getLegendRenderer().setAlign(LegendRenderer.LegendAlign.TOP);
             graphView.getGridLabelRenderer().setLabelVerticalWidth(40);
-            graphView.setTitle(context.getString(SensorInformation.fromSensorType(item.measurement.getSensorType()).getTitleStringId()));
+            graphView.setTitle(item.measurement.getTitle());
 
             Button viewButton = (Button) view.findViewById(R.id.view);
-            Button deleteButton = (Button) view.findViewById(R.id.delete);
+            final Button deleteButton = (Button) view.findViewById(R.id.delete);
+            Button analyzeButton = (Button) view.findViewById(R.id.analyze);
             CheckBox selectButton = (CheckBox) view.findViewById(R.id.select);
 
             viewButton.setOnClickListener(new View.OnClickListener() {
@@ -156,6 +167,56 @@ public class ExperimentActivity extends AppCompatActivity {
                     AlertDialog alertDialog = ab.create();
                     alertDialog.setTitle(R.string.delete);
                     alertDialog.show();
+                }
+            });
+            analyzeButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+//                    AlertDialog.Builder ab = new AlertDialog.Builder(context);
+//                    ab.setMessage(R.string.analyze)
+//                            .setCancelable(true)
+//                            .setPositiveButton(R.string.done, new DialogInterface.OnClickListener() {
+//                                @Override
+//                                public void onClick(DialogInterface dialog, int which) {
+//
+//                                }
+//                            }).setNegativeButton(R.string.cancle, new DialogInterface.OnClickListener() {
+//                                @Override
+//                                public void onClick(DialogInterface dialog, int which) {
+//                                    dialog.cancel();
+//                                }
+//                            })
+//                            ;
+//                    AlertDialog alertDialog = ab.create();
+//                    alertDialog.setTitle(0);
+//                    alertDialog.show();
+
+                    // TODO
+                    long[] newSeriesIds = new long[item.measurement.getSeriesIds().size()];
+                    for (int i = 0; i < newSeriesIds.length; i++) {
+                        long seriesId = item.measurement.getSeriesIds().get(i);
+                        Series series = context.dbHelper.selectSeries(seriesId);
+
+                        List<Double> analyzed = Analyze.ANALYZE_INTEGRAL.analyze(series.getData());
+
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        DataOutputStream dos = new DataOutputStream(baos);
+                        try {
+                            for (Double d : analyzed) dos.writeDouble(d);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                        long newSeriesId = context.dbHelper.insertSeries(series.getTitle(), series.getColor(), baos.toByteArray());
+                        newSeriesIds[i] = newSeriesId;
+                    }
+                    context.experiment.getMeasurements().add(context.dbHelper.insertMeasurement(item.measurement.getTitle(), newSeriesIds));
+                    context.dbHelper.updateExperiment(context.experiment);
+
+                    Intent intent = new Intent(context, NewAnalyzeActivity.class);
+                    intent.putExtra("experimentId", context.experiment.getId());
+                    intent.putExtra("measurementId", item.measurement.getId());
+                    context.startActivity(intent);
                 }
             });
             selectButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -305,22 +366,13 @@ public class ExperimentActivity extends AppCompatActivity {
 
         ArrayList<Long> seriesIds = measurement.getSeriesIds();
 
-        String[] valueNames = SensorInformation.fromSensorType(measurement.getSensorType()).getValueNames();
-        int[] colors = SensorInformation.fromSensorType(measurement.getSensorType()).getColors();
-
         MeasurementsListViewItem item = new MeasurementsListViewItem(measurement, new ArrayList<LineGraphSeries>());
 
         for (int i = 0; i < seriesIds.size(); i++) {
             long seriesId = seriesIds.get(i);
+            Series series = dbHelper.selectSeries(seriesId);
 
-            LineGraphSeries<DataPoint> series = dbHelper.selectSeries(seriesId);
-
-            if (series == null) continue;
-
-            series.setTitle(valueNames[i]);
-            series.setColor(colors[i]);
-
-            item.series.add(series);
+            if (series.getLineGraphSeries() != null) item.series.add(series.getLineGraphSeries());
         }
 
         return item;
