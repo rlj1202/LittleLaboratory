@@ -70,11 +70,14 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
     private static final String SQL_CREATE_MEASUREMENTS =
             "CREATE TABLE " + MeasurementEntry.TABLE_NAME + " (" +
             MeasurementEntry.COLUMN_NAME_ID + INTEGER_TYPE + " PRIMARY KEY AUTOINCREMENT" + COMMA_SEP +
+            MeasurementEntry.COLUMN_NAME_TITLE + TEXT_TYPE + COMMA_SEP +
             MeasurementEntry.COLUMN_NAME_SERIES_IDS + BLOB_TYPE +
             " )";
     private static final String SQL_CREATE_SERIES =
             "CREATE TABLE " + SeriesEntry.TABLE_NAME + " (" +
             SeriesEntry.COLUMN_NAME_ID + INTEGER_TYPE + " PRIMARY KEY AUTOINCREMENT" + COMMA_SEP +
+            SeriesEntry.COLUMN_NAME_TITLE + TEXT_TYPE + COMMA_SEP +
+            SeriesEntry.COLUMN_NAME_COLOR + INTEGER_TYPE + COMMA_SEP +
             SeriesEntry.COLUMN_NAME_DATA + BLOB_TYPE +
             " )";
     private static final String SQL_DELETE_EXPERIMENTS =
@@ -144,13 +147,17 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
         return newRowId;
     }
 
-    public long insertSeries(String title, int color, byte[] rawData) {
+    public long insertSeries(String title, int color, List<Double> data) {
         SQLiteDatabase db = getWritableDatabase();
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(baos);
+        try { for (double d : data) dos.writeDouble(d); } catch (IOException e) {}
 
         ContentValues values = new ContentValues();
         values.put(SeriesEntry.COLUMN_NAME_TITLE, title);
         values.put(SeriesEntry.COLUMN_NAME_COLOR, color);
-        values.put(SeriesEntry.COLUMN_NAME_DATA, rawData);
+        values.put(SeriesEntry.COLUMN_NAME_DATA, baos.toByteArray());
 
         long newRowId = db.insert(SeriesEntry.TABLE_NAME, null, values);
 

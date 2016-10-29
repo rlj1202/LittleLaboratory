@@ -1,5 +1,6 @@
 package redlaboratory.littlelaboratory;
 
+import android.app.Activity;
 import android.content.Context;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -12,23 +13,33 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import redlaboratory.littlelaboratory.analyze.Analyze;
 import redlaboratory.littlelaboratory.db.Experiment;
 import redlaboratory.littlelaboratory.db.LittleLaboratoryDbHelper;
 import redlaboratory.littlelaboratory.db.Measurement;
+import redlaboratory.littlelaboratory.db.Series;
 
 public class NewAnalyzeActivity extends AppCompatActivity {
 
     public static class AnalyzeMethodListAdapter extends BaseAdapter {
 
-        private Context context;
+        private Activity activity;
         private LayoutInflater inflater;
 
-        public AnalyzeMethodListAdapter(Context context) {
-            this.context = context;
+        private LittleLaboratoryDbHelper dbHelper;
 
-            inflater = (LayoutInflater) context.getSystemService(LAYOUT_INFLATER_SERVICE);
+        private Experiment experiment;
+        private Measurement measurement;
+
+        public AnalyzeMethodListAdapter(Activity activity, LittleLaboratoryDbHelper dbHelper, Experiment experiment, Measurement measurement) {
+            this.activity = activity;
+            this.experiment = experiment;
+            this.measurement = measurement;
+            this.dbHelper = dbHelper;
+
+            inflater = (LayoutInflater) activity.getSystemService(LAYOUT_INFLATER_SERVICE);
         }
 
         @Override
@@ -39,13 +50,32 @@ public class NewAnalyzeActivity extends AppCompatActivity {
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
             if (convertView == null) {
-                convertView = inflater.inflate(R.layout.support_simple_spinner_dropdown_item, null);
+                convertView = inflater.inflate(R.layout.item_new_analyze, null);
             }
 
-            Analyze analyze = Analyze.values[position];
+            final Analyze analyze = Analyze.values[position];
 
-            TextView textView = (TextView) convertView.findViewById(android.R.id.text1);
+            TextView textView = (TextView) convertView.findViewById(R.id.text);
             textView.setText(analyze.getName());
+            textView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    long[] newSeriesIds = new long[measurement.getSeriesIds().size()];
+                    for (int i = 0; i < newSeriesIds.length; i++) {
+                        long seriesId = measurement.getSeriesIds().get(i);
+                        Series series = dbHelper.selectSeries(seriesId);
+
+                        List<Double> analyzed = analyze.analyze(series.getData());
+
+                        long newSeriesId = dbHelper.insertSeries(series.getTitle(), series.getColor(), analyzed);
+                        newSeriesIds[i] = newSeriesId;
+                    }
+                    experiment.getMeasurements().add(dbHelper.insertMeasurement(activity.getString(R.string.temporarily), newSeriesIds));
+                    dbHelper.updateExperiment(experiment);
+
+                    activity.finish();
+                }
+            });
 
             return convertView;
         }
@@ -64,7 +94,7 @@ public class NewAnalyzeActivity extends AppCompatActivity {
 
     private LittleLaboratoryDbHelper dbHelper;
     private Experiment experiment;
-    private ArrayList<Measurement> measurements;
+    private Measurement measurement;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,17 +105,12 @@ public class NewAnalyzeActivity extends AppCompatActivity {
 
         long experimentId = getIntent().getLongExtra("experimentId", -1);
         long measurementId = getIntent().getLongExtra("measurementId", -1);
-//        Long[] measurementIds = (Long[]) getIntent().getSerializableExtra("measurementIds");
 
         experiment = dbHelper.selectExperiment(experimentId);
-        measurements = new ArrayList<Measurement>();
-
-//        for (Long id : measurementIds) {
-//            measurements.add(dbHelper.selectMeasurement(id));
-//        }
+        measurement = dbHelper.selectMeasurement(measurementId);
 
         ListView listView = (ListView) findViewById(R.id.listView);
-        listView.setAdapter(new AnalyzeMethodListAdapter(this));
+        listView.setAdapter(new AnalyzeMethodListAdapter(this, dbHelper, experiment, measurement));
 
         Button done = (Button) findViewById(R.id.done);
         done.setOnClickListener(new View.OnClickListener() {
@@ -95,4 +120,5 @@ public class NewAnalyzeActivity extends AppCompatActivity {
             }
         });
     }
+
 }

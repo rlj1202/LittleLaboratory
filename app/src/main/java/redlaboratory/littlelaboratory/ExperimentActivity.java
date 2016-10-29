@@ -191,28 +191,6 @@ public class ExperimentActivity extends AppCompatActivity {
 //                    alertDialog.setTitle(0);
 //                    alertDialog.show();
 
-                    // TODO
-                    long[] newSeriesIds = new long[item.measurement.getSeriesIds().size()];
-                    for (int i = 0; i < newSeriesIds.length; i++) {
-                        long seriesId = item.measurement.getSeriesIds().get(i);
-                        Series series = context.dbHelper.selectSeries(seriesId);
-
-                        List<Double> analyzed = Analyze.ANALYZE_INTEGRAL.analyze(series.getData());
-
-                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                        DataOutputStream dos = new DataOutputStream(baos);
-                        try {
-                            for (Double d : analyzed) dos.writeDouble(d);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-
-                        long newSeriesId = context.dbHelper.insertSeries(series.getTitle(), series.getColor(), baos.toByteArray());
-                        newSeriesIds[i] = newSeriesId;
-                    }
-                    context.experiment.getMeasurements().add(context.dbHelper.insertMeasurement(item.measurement.getTitle(), newSeriesIds));
-                    context.dbHelper.updateExperiment(context.experiment);
-
                     Intent intent = new Intent(context, NewAnalyzeActivity.class);
                     intent.putExtra("experimentId", context.experiment.getId());
                     intent.putExtra("measurementId", item.measurement.getId());
@@ -272,7 +250,6 @@ public class ExperimentActivity extends AppCompatActivity {
 
         MeasurementsListViewAdapter adapter = new MeasurementsListViewAdapter(this, items);
 
-
         ListView measurementListView = (ListView) findViewById(R.id.measurements);
         measurementListView.setAdapter(adapter);
         View emptyView = getLayoutInflater().inflate(R.layout.item_measurements_empty, measurementListView, false);
@@ -315,6 +292,15 @@ public class ExperimentActivity extends AppCompatActivity {
 //        recyclerView.setHasFixedSize(true);
 //        recyclerView.setLayoutManager(new LinearLayoutManager((this)));
 //        recyclerView.setAdapter(new MyAdapter(new String[] {"test", "test2"}));
+    }
+
+    @Override
+    protected void onResume() {// TODO NOT WORKING
+        super.onResume();
+
+        ListView measurementListView = (ListView) findViewById(R.id.measurements);
+        ((BaseAdapter) measurementListView.getAdapter()).notifyDataSetChanged();
+        setListViewHeightBasedOnChildren(measurementListView);
     }
 
     private void addMeasurementItem(MeasurementsListViewItem item) {

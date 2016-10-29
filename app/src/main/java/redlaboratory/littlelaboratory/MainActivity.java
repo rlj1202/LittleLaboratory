@@ -1,27 +1,34 @@
 package redlaboratory.littlelaboratory;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.PermissionChecker;
+import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.BaseAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 
 import redlaboratory.littlelaboratory.db.Experiment;
 import redlaboratory.littlelaboratory.db.LittleLaboratoryDbHelper;
@@ -29,6 +36,57 @@ import redlaboratory.littlelaboratory.db.Measurement;
 import redlaboratory.littlelaboratory.db.Series;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+
+    public static class ExperimentListViewAdapter extends BaseAdapter {
+
+        private LayoutInflater inflater;
+        private ArrayList<Experiment> data;
+        private int layout;
+
+        public ExperimentListViewAdapter(Context context, int layout, ArrayList<Experiment> data) {
+            this.inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+            this.data = data;
+            this.layout = layout;
+        }
+
+        @Override
+        public int getCount() {
+            return data.size();
+        }
+
+        @Override
+        public Experiment getItem(int position) {
+            return data.get(position);
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return position;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            if (convertView == null) {
+                convertView = inflater.inflate(layout, parent, false);
+            }
+
+            Experiment projectListItem = data.get(position);
+
+            TextView title = (TextView) convertView.findViewById(R.id.title);
+            TextView description = (TextView) convertView.findViewById(R.id.description);
+            TextView date = (TextView) convertView.findViewById(R.id.date);
+
+            Calendar cal = projectListItem.getAddedDate();
+            String dateStr = cal.get(Calendar.YEAR) + "년 " + (cal.get(Calendar.MONTH) + 1) + "월 " + cal.get(Calendar.DATE) + "일 " + cal.get(Calendar.HOUR_OF_DAY) + ":" + cal.get(Calendar.MINUTE) + ":" + cal.get(Calendar.SECOND);
+
+            title.setText(projectListItem.getTitle());
+            description.setText(projectListItem.getDescription());
+            date.setText(dateStr);
+
+            return convertView;
+        }
+
+    }
 
     private ActionBarDrawerToggle toggle;
     private FloatingActionButton newExperimentFab;
@@ -44,8 +102,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        int permissionReadCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
-        int permissionWriteCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        int permissionReadCheck = PermissionChecker.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+        int permissionWriteCheck = PermissionChecker.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
         if (permissionReadCheck == PackageManager.PERMISSION_DENIED) {
 //            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_EXTERNAL_STORAGE)) {
 //                AlertDialog.Builder ab = new AlertDialog.Builder(this)
