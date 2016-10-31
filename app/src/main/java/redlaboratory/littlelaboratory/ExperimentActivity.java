@@ -236,31 +236,15 @@ public class ExperimentActivity extends AppCompatActivity {
 
         inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
         dbHelper = new LittleLaboratoryDbHelper(getApplicationContext());
-        long experimentId = getIntent().getLongExtra("experimentId", -1);
-        experiment = dbHelper.selectExperiment(experimentId);
-
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        toolbar.setTitle(experiment.getTitle());
-        setSupportActionBar(toolbar);
-
-        TextView description = (TextView) findViewById(R.id.description);
-        description.setText(experiment.getDescription());
 
         items = new ArrayList<>();
 
         MeasurementsListViewAdapter adapter = new MeasurementsListViewAdapter(this, items);
-
         ListView measurementListView = (ListView) findViewById(R.id.measurements);
         measurementListView.setAdapter(adapter);
         View emptyView = getLayoutInflater().inflate(R.layout.item_measurements_empty, measurementListView, false);
         ((ViewGroup) measurementListView.getParent()).addView(emptyView);
         measurementListView.setEmptyView(emptyView);
-
-        for (long measurementId : experiment.getMeasurements()) {
-            Log.i("LittleLaboratory", "Load measurementListViewItem: " + measurementId);
-            MeasurementsListViewItem item = getMeasurementsListViewItem(measurementId);
-            addMeasurementItem(item);
-        }
 
         FloatingActionButton newMeasurementFab = (FloatingActionButton) findViewById(R.id.newmeasurementfab);
         newMeasurementFab.setOnClickListener(new View.OnClickListener() {
@@ -287,20 +271,28 @@ public class ExperimentActivity extends AppCompatActivity {
                 startActivityForResult(intent, REQUEST_NEW_ANALYZE);
             }
         });
-
-//        RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
-//        recyclerView.setHasFixedSize(true);
-//        recyclerView.setLayoutManager(new LinearLayoutManager((this)));
-//        recyclerView.setAdapter(new MyAdapter(new String[] {"test", "test2"}));
     }
 
     @Override
-    protected void onResume() {// TODO NOT WORKING
-        super.onResume();
+    protected void onStart() {
+        super.onStart();
 
-        ListView measurementListView = (ListView) findViewById(R.id.measurements);
-        ((BaseAdapter) measurementListView.getAdapter()).notifyDataSetChanged();
-        setListViewHeightBasedOnChildren(measurementListView);
+        long experimentId = getIntent().getLongExtra("experimentId", -1);
+        experiment = dbHelper.selectExperiment(experimentId);
+
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar.setTitle(experiment.getTitle());
+        setSupportActionBar(toolbar);
+
+        TextView description = (TextView) findViewById(R.id.description);
+        description.setText(experiment.getDescription());
+
+        items.clear();
+        for (long measurementId : experiment.getMeasurements()) {
+            Log.i("LittleLaboratory", "Load measurementListViewItem: " + measurementId);
+            MeasurementsListViewItem item = getMeasurementsListViewItem(measurementId);
+            addMeasurementItem(item);
+        }
     }
 
     private void addMeasurementItem(MeasurementsListViewItem item) {
