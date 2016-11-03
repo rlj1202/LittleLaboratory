@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import redlaboratory.littlelaboratory.analyze.Analyze;
+import redlaboratory.littlelaboratory.db.DataType;
 import redlaboratory.littlelaboratory.db.Experiment;
 import redlaboratory.littlelaboratory.db.LittleLaboratoryDbHelper;
 import redlaboratory.littlelaboratory.db.Measurement;
@@ -70,7 +71,8 @@ public class NewAnalyzeActivity extends AppCompatActivity {
                         long newSeriesId = dbHelper.insertSeries(series.getTitle(), series.getColor(), analyzed);
                         newSeriesIds[i] = newSeriesId;
                     }
-                    experiment.getMeasurements().add(dbHelper.insertMeasurement(activity.getString(R.string.temporarily), newSeriesIds));
+                    DataType analyzedDataType = analyze.getAnalyzedDataType(measurement.getDataType());
+                    experiment.getMeasurements().add(dbHelper.insertMeasurement(activity.getString(analyzedDataType.getNameStringId()), analyzedDataType, newSeriesIds));
                     dbHelper.updateExperiment(experiment);
 
                     activity.finish();

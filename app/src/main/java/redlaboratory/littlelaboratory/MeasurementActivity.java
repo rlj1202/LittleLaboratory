@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import redlaboratory.littlelaboratory.db.DataType;
 import redlaboratory.littlelaboratory.db.LittleLaboratoryDbHelper;
 
 public class MeasurementActivity extends Activity {
@@ -83,7 +84,7 @@ public class MeasurementActivity extends Activity {
             graphView.getLegendRenderer().setAlign(LegendRenderer.LegendAlign.TOP);
             graphView.getGridLabelRenderer().setLabelVerticalWidth(40);
 //        graphView.getGridLabelRenderer().setHorizontalAxisTitle(context.getString(R.string.time));
-            graphView.setTitle(context.getString(SensorInformation.fromSensorType(sensorListener.sensorType).getTitleStringId()) + ", " + sensorListener.sensorType);
+            graphView.setTitle(context.getString(SensorInformation.fromSensorType(sensorListener.sensorType).getDataType().getNameStringId()));
 
             Log.i("LittleLaboratory", "Load view item: " + position + ", " + sensorListener.hashCode() + ", " + sensorListener.sensorType + "");
 
@@ -185,7 +186,8 @@ public class MeasurementActivity extends Activity {
                 for (int i = 0; i < listeners.size(); i++) {
                     SensorListener listener = listeners.get(i);
 
-                    String sensorName = getString(SensorInformation.fromSensorType(listener.sensorType).getTitleStringId());
+                    DataType dataType = SensorInformation.fromSensorType(listener.sensorType).getDataType();
+                    String sensorName = getString(SensorInformation.fromSensorType(listener.sensorType).getDataType().getNameStringId());
                     int values = SensorInformation.fromSensorType(listener.sensorType).getValues();
                     String[] valueNames = SensorInformation.fromSensorType(listener.sensorType).getValueNames();
                     int[] colors = SensorInformation.fromSensorType(listener.sensorType).getColors();
@@ -196,7 +198,7 @@ public class MeasurementActivity extends Activity {
                         seriesIds[j] = littleLaboratoryDbHelper.insertSeries(valueNames[j], colors[j], listener.datas[j]);
                     }
 
-                    long measurementId = littleLaboratoryDbHelper.insertMeasurement(sensorName, seriesIds);
+                    long measurementId = littleLaboratoryDbHelper.insertMeasurement(sensorName, dataType, seriesIds);
                     measurementIds[i] = measurementId;
                 }
 

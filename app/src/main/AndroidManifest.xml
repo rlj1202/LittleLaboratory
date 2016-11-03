@@ -22,8 +22,7 @@
         <activity android:name=".ExperimentActivity" />
         <activity android:name=".NewMeasurementActivity" />
         <activity android:name=".MeasurementActivity" />
-        <activity android:name=".AnalyzeActivity" />
-        <activity android:name=".NewAnalyzeActivity"></activity>
+        <activity android:name=".NewAnalyzeActivity" />
     </application>
 
 </manifest>

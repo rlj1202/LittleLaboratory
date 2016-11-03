@@ -27,7 +27,7 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
 
     public static abstract class ExperimentEntry implements BaseColumns {
         public static final String TABLE_NAME = "experiments";
-        public static final String COLUMN_NAME_ID = "id";
+        public static final String COLUMN_NAME_ID = "id";// long
         public static final String COLUMN_NAME_TITLE = "title";// String
         public static final String COLUMN_NAME_DESCRIPTION = "description";// String
         public static final String COLUMN_NAME_DATE = "date";// long
@@ -36,20 +36,21 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
 
     public static abstract class MeasurementEntry implements BaseColumns {
         public static final String TABLE_NAME = "measurements";
-        public static final String COLUMN_NAME_ID = "id";
+        public static final String COLUMN_NAME_ID = "id";// long
+        public static final String COLUMN_NAME_DATA_TYPE = "data_type";// integer
         public static final String COLUMN_NAME_TITLE = "title";// String
         public static final String COLUMN_NAME_SERIES_IDS = "series_ids";// long array
     }
 
     public static abstract class SeriesEntry implements BaseColumns {
         public static final String TABLE_NAME = "series";
-        public static final String COLUMN_NAME_ID = "id";
+        public static final String COLUMN_NAME_ID = "id";// long
         public static final String COLUMN_NAME_TITLE = "title";// String
         public static final String COLUMN_NAME_COLOR = "color";// int
         public static final String COLUMN_NAME_DATA = "data";// blob
     }
 
-    public static final int DATABASE_VERSION = 2;
+    public static final int DATABASE_VERSION = 1;
     public static final String DATABASE_NAME = "LittleLaboratory.db";
 
     private static final String NULL_TYPE = " NULL";
@@ -70,6 +71,7 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
     private static final String SQL_CREATE_MEASUREMENTS =
             "CREATE TABLE " + MeasurementEntry.TABLE_NAME + " (" +
             MeasurementEntry.COLUMN_NAME_ID + INTEGER_TYPE + " PRIMARY KEY AUTOINCREMENT" + COMMA_SEP +
+            MeasurementEntry.COLUMN_NAME_DATA_TYPE + INTEGER_TYPE + COMMA_SEP +
             MeasurementEntry.COLUMN_NAME_TITLE + TEXT_TYPE + COMMA_SEP +
             MeasurementEntry.COLUMN_NAME_SERIES_IDS + BLOB_TYPE +
             " )";
@@ -129,7 +131,7 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
         return newRowId;
     }
 
-    public long insertMeasurement(String title, long[] seriesIds) {
+    public long insertMeasurement(String title, DataType dataType, long[] seriesIds) {
         SQLiteDatabase db = getWritableDatabase();
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -137,6 +139,7 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
         try { for (long seriesId : seriesIds) dos.writeLong(seriesId); } catch (IOException e) {}
 
         ContentValues values = new ContentValues();
+        values.put(MeasurementEntry.COLUMN_NAME_DATA_TYPE, dataType.getId());
         values.put(MeasurementEntry.COLUMN_NAME_TITLE, title);
         values.put(MeasurementEntry.COLUMN_NAME_SERIES_IDS, baos.toByteArray());
 
@@ -326,6 +329,7 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
 
         while (c.moveToNext()) {
             long id = c.getLong(c.getColumnIndex(MeasurementEntry.COLUMN_NAME_ID));
+            DataType dataType = DataType.fromId(c.getInt(c.getColumnIndex(MeasurementEntry.COLUMN_NAME_DATA_TYPE)));
             String title = c.getString(c.getColumnIndex(MeasurementEntry.COLUMN_NAME_TITLE));
             byte[] rawSeriesIds = c.getBlob(c.getColumnIndex(MeasurementEntry.COLUMN_NAME_SERIES_IDS));
 
@@ -339,7 +343,7 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
                 e.printStackTrace();
             }
 
-            Measurement measurement = new Measurement(id, title, seriesIds);
+            Measurement measurement = new Measurement(id, dataType, title, seriesIds);
             result.add(measurement);
         }
 
@@ -360,6 +364,7 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
 
         c.moveToNext();
 
+        DataType dataType = DataType.fromId(c.getInt(c.getColumnIndex(MeasurementEntry.COLUMN_NAME_DATA_TYPE)));
         String title = c.getString(c.getColumnIndex(MeasurementEntry.COLUMN_NAME_TITLE));
         byte[] rawSeriesIds = c.getBlob(c.getColumnIndex(MeasurementEntry.COLUMN_NAME_SERIES_IDS));
 
@@ -371,7 +376,7 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
             }
         } catch (IOException e) {}
 
-        return new Measurement(id, title, seriesIds);
+        return new Measurement(id, dataType, title, seriesIds);
     }
 
     public ArrayList<Series> selectSeries() {

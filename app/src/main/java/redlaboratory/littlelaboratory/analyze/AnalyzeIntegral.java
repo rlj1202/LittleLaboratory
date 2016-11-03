@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import redlaboratory.littlelaboratory.R;
+import redlaboratory.littlelaboratory.db.DataType;
 
 public class AnalyzeIntegral implements Analyze {
 
@@ -17,6 +18,8 @@ public class AnalyzeIntegral implements Analyze {
         double prevX = it.next();
         double prevY = it.next();
 
+        double total = 0;
+
         for (; it.hasNext(); ) {
             double x = it.next();
             double y = it.next();
@@ -24,14 +27,25 @@ public class AnalyzeIntegral implements Analyze {
             double xDelta = Math.abs(x - prevX);
             double surface = (y + prevY) * xDelta / 2;
 
+            total += surface;
+
             newData.add(prevX);
-            newData.add(surface);
+            newData.add(total);
 
             prevX = x;
             prevY = y;
         }
 
         return newData;
+    }
+
+    @Override
+    public DataType getAnalyzedDataType(DataType dataType) {
+        switch (dataType) {
+        case DATA_ACCELERATION: return DataType.DATA_DISPLACEMENT;
+            case DATA_JERK: return DataType.DATA_ACCELERATION;
+        default: return DataType.DATA_NONE;
+        }
     }
 
     @Override

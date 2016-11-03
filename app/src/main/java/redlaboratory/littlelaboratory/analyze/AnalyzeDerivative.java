@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import redlaboratory.littlelaboratory.R;
+import redlaboratory.littlelaboratory.db.DataType;
 
 public class AnalyzeDerivative implements Analyze {
 
@@ -31,6 +32,15 @@ public class AnalyzeDerivative implements Analyze {
         }
 
         return newData;
+    }
+
+    @Override
+    public DataType getAnalyzedDataType(DataType dataType) {
+        switch (dataType) {
+            case DATA_DISPLACEMENT: return DataType.DATA_ACCELERATION;
+            case DATA_ACCELERATION: return DataType.DATA_JERK;
+            default: return DataType.DATA_NONE;
+        }
     }
 
     @Override

@@ -259,16 +259,16 @@ public class ExperimentActivity extends AppCompatActivity {
         newAnalyzeFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ArrayList<Long> measurements = new ArrayList<Long>();
-
-                for (MeasurementsListViewItem item : items) {
-                    if (item.checked) measurements.add(item.measurement.getId());
-                }
-
-                Intent intent = new Intent(ExperimentActivity.this, NewAnalyzeActivity.class);
-                intent.putExtra("experimentId", experiment.getId());
-                intent.putExtra("measurementIds", measurements.toArray(new Long[] {}));
-                startActivityForResult(intent, REQUEST_NEW_ANALYZE);
+//                ArrayList<Long> measurements = new ArrayList<Long>();
+//
+//                for (MeasurementsListViewItem item : items) {
+//                    if (item.checked) measurements.add(item.measurement.getId());
+//                }
+//
+//                Intent intent = new Intent(ExperimentActivity.this, NewAnalyzeActivity.class);
+//                intent.putExtra("experimentId", experiment.getId());
+//                intent.putExtra("measurementIds", measurements.toArray(new Long[] {}));
+//                startActivityForResult(intent, REQUEST_NEW_ANALYZE);
             }
         });
     }
