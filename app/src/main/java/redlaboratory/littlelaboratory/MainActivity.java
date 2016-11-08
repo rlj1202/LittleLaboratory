@@ -104,6 +104,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         int permissionReadCheck = PermissionChecker.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
         int permissionWriteCheck = PermissionChecker.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        int permissionCamera = PermissionChecker.checkSelfPermission(this, Manifest.permission.CAMERA);
         if (permissionReadCheck == PackageManager.PERMISSION_DENIED) {
 //            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_EXTERNAL_STORAGE)) {
 //                AlertDialog.Builder ab = new AlertDialog.Builder(this)
@@ -126,6 +127,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
         if (permissionWriteCheck == PackageManager.PERMISSION_DENIED) {
             ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.WRITE_EXTERNAL_STORAGE}, 0);
+        }
+        if (permissionCamera == PackageManager.PERMISSION_DENIED) {
+            ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.CAMERA}, 0);
         }
 
         newExperimentFab = (FloatingActionButton) findViewById(R.id.fab);

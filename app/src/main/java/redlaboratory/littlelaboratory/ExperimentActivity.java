@@ -269,6 +269,9 @@ public class ExperimentActivity extends AppCompatActivity {
 //                intent.putExtra("experimentId", experiment.getId());
 //                intent.putExtra("measurementIds", measurements.toArray(new Long[] {}));
 //                startActivityForResult(intent, REQUEST_NEW_ANALYZE);
+
+                Intent intent = new Intent(ExperimentActivity.this, OpenCVTestActivity.class);
+                startActivity(intent);
             }
         });
     }
