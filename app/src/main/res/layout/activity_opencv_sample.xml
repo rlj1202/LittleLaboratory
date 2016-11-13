@@ -10,5 +10,6 @@
         android:visibility="gone"
         android:id="@+id/HelloOpenCvView"
         opencv:show_fps="true"
-        opencv:camera_id="any" />
+        opencv:camera_id="back"
+        />
 </LinearLayout>

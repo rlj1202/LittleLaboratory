@@ -47,5 +47,6 @@
     <string name="type_orientation">방향</string>
 
     <string name="type_displacement">변위</string>
+    <string name="type_velocity">속도</string>
     <string name="type_jerk">가가속도</string>
 </resources>

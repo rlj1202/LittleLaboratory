@@ -42,8 +42,9 @@ public class AnalyzeIntegral implements Analyze {
     @Override
     public DataType getAnalyzedDataType(DataType dataType) {
         switch (dataType) {
-        case DATA_ACCELERATION: return DataType.DATA_DISPLACEMENT;
-            case DATA_JERK: return DataType.DATA_ACCELERATION;
+        case DATA_VELOCITY: return DataType.DATA_DISPLACEMENT;
+        case DATA_ACCELERATION: return DataType.DATA_VELOCITY;
+        case DATA_JERK: return DataType.DATA_ACCELERATION;
         default: return DataType.DATA_NONE;
         }
     }
