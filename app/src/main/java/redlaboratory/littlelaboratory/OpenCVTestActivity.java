@@ -106,63 +106,94 @@ public class OpenCVTestActivity extends AppCompatActivity implements CameraBridg
 
     }
 
+    private Mat grey;
+    private Mat rgba;
+
+    private Mat binarization;
+
+    private int width;
+    private int height;
+
+    private int minWidth;
+    private int maxWidth;
+    private int minHeight;
+    private int maxHeight;
+
+    private Rect[] rectsResult;
+
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        Mat grey = inputFrame.gray();
-        Mat rgba = inputFrame.rgba();
+        grey = inputFrame.gray();
+        rgba = inputFrame.rgba();
 
-        int width = rgba.width();
-        int height = rgba.height();
+        width = rgba.width();
+        height = rgba.height();
 
-        int minWidth = 10;
-        int maxWidth = 1000;
-        int minHeight = 10;
-        int maxHeight = 1000;
+        minWidth = 10;
+        maxWidth = 1000;
+        minHeight = 10;
+        maxHeight = 1000;
 
-        Mat binarization = new Mat();
+        binarization = new Mat();
 
         Imgproc.threshold(grey, binarization, 127.0d, 225.0d, Imgproc.THRESH_BINARY_INV);
 
-        Rect[] rectsResult;
-        {
-            int[] imgBuffer = new int[width * height];
+        {// labeling
             int[] labelBuffer = new int[width * height];
+            for (int i = 0; i < width * height; i++) labelBuffer[i] = -1;
 
-            Rect[] rectLable = new Rect[width * height];
+            int curLabelNum = 0;
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    double pixel = binarization.get(y, x)[0];
+                    int labelNum = labelBuffer[x + y * width];
 
-            int labelCount = 0;
+                    if (pixel == 255.0 && labelNum != -1) {
+                        labelBuffer[x + y * width] = curLabelNum++;
 
-            for (int h = 0; h < height; h++) {
-                for (int w = 0; w < width; w++) {
-                    imgBuffer[w + h * width] = (int) binarization.get(w, h)[0];// NULL POINTER EXCEPTION
-                    labelBuffer[w + h * width] = -1;
-                }
-            }
-
-            for (int h = 0; h < height; h++) {
-                for (int w = 0; w < width; w++) {
-                    if (imgBuffer[w + h * width] == 255 && labelBuffer[w + h * width] == -1) {
-                        Rect temp = new Rect();
-                        temp.x = w;
-                        temp.y = h;
-                        temp.width = 0;
-                        temp.height = 0;
-                        labelCount++;
-
-                        labeling(imgBuffer, labelBuffer, width, height, w, h, temp, labelCount);
-
-                        if (temp.width < minWidth || temp.width > maxWidth || temp.height < minHeight || temp.height > maxHeight) labelCount--;
-                        else rectLable[labelCount - 1] = temp;
+                        
                     }
                 }
             }
-
-            rectsResult = rectLable;
         }
-
-        for (Rect rect : rectsResult) {
-            Imgproc.rectangle(rgba, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(1, 0, 0));
-        }
+//        {
+//            int[] imgBuffer = new int[width * height];
+//            int[] labelBuffer = new int[width * height];
+//
+//            rectsResult = new Rect[width * height];
+//
+//            for (int h = 0; h < height; h++) {
+//                for (int w = 0; w < width; w++) {
+//                    imgBuffer[w + h * width] = (int) binarization.get(h, w)[0];// get(y, x);
+//                    labelBuffer[w + h * width] = -1;
+//                }
+//            }
+//
+//            int labelCount = 0;
+//
+//            for (int h = 0; h < height; h++) {
+//                for (int w = 0; w < width; w++) {
+//                    if (imgBuffer[w + h * width] == 255 && labelBuffer[w + h * width] == -1) {
+//                        Rect temp = new Rect();
+//                        temp.x = w;
+//                        temp.y = h;
+//                        temp.width = 0;
+//                        temp.height = 0;
+//                        labelCount++;
+//
+//                        labeling(imgBuffer, labelBuffer, width, height, w, h, temp, labelCount);
+//
+//                        if (temp.width < minWidth || temp.width > maxWidth || temp.height < minHeight || temp.height > maxHeight) labelCount--;
+//                        else rectsResult[labelCount - 1] = temp;
+//                    }
+//                }
+//            }
+//        }
+//
+//        for (Rect rect : rectsResult) {
+//            if (rect == null) continue;
+//            Imgproc.rectangle(rgba, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(255, 0, 0));
+//        }
 
 //        Imgproc.threshold(mGrey, binarization, 100, 255, Imgproc.THRESH_BINARY);
 //        Imgproc.rectangle(mRgba, new Point(100, 200), new Point(100, 100), new Scalar(256, 0, 0), 3);
@@ -173,7 +204,7 @@ public class OpenCVTestActivity extends AppCompatActivity implements CameraBridg
 //        Imgproc.findContours(intermediate, contours, new Mat(), Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE, new Point(0, 0));
 //        Imgproc.drawContours(mRgba, contours, -1, new Scalar(255, 0, 0));
 
-        return rgba;
+        return binarization;
     }
 
     private void labeling(int[] imgBuffer, int[] labelBuffer, int width, int height, int x, int y, Rect label, int labelNum) {
