@@ -19,6 +19,7 @@ import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
+import org.opencv.engine.OpenCVEngineInterface;
 import org.opencv.features2d.FeatureDetector;
 import org.opencv.imgproc.Imgproc;
 
@@ -138,23 +139,57 @@ public class OpenCVTestActivity extends AppCompatActivity implements CameraBridg
 
         Imgproc.threshold(grey, binarization, 127.0d, 225.0d, Imgproc.THRESH_BINARY_INV);
 
+        Log.v("LittleLaboratory", "onCameraFrame, " + inputFrame.rgba().type() + ", " + binarization.type());
+
         {// labeling
             int[] labelBuffer = new int[width * height];
             for (int i = 0; i < width * height; i++) labelBuffer[i] = -1;
 
-            int curLabelNum = 0;
+            int labelNum = 0;
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
-                    double pixel = binarization.get(y, x)[0];
-                    int labelNum = labelBuffer[x + y * width];
-
-                    if (pixel == 255.0 && labelNum != -1) {
-                        labelBuffer[x + y * width] = curLabelNum++;
-
-                        
-                    }
+//                    double curPixel = binarization.get(y, x)[0];
+//                    int curLabelNum = labelBuffer[x + y * width];
+//                    Log.v("LittleLaboratory", "im here1");
+//                    Point[] pointBufferA = new Point[width * height];
+//                    Point[] pointBufferB = new Point[width * height];
+//                    int arraySizeA = 0;
+//                    int arraySizeB = 0;
+//
+//                    if (curPixel == 255.0 && curLabelNum != -1) {// 화소가 있고 라벨링이 되어있지 않으면
+//                        labelNum++;// 초기값이 0이 었으니 1번부터 라벨링 번호를 매기도록 하겠음.
+//
+//                        pointBufferA[arraySizeA++] = new Point(x, y);// 버퍼에 시작될 포인트를 넣고
+//
+//                        while (true) {// 루프 돌린다
+//                            Log.v("LittleLaboratory", "im here2");
+//                            for (int i = 0; i < arraySizeA; i++) {
+//                                Point point = pointBufferA[i];
+//
+//                                if (binarization.get((int) point.y, (int) point.x)[0] == 255.0) {// 해당 포인트에 화소가 있으면
+//                                    labelBuffer[(int) (point.x + point.y * width)] = labelNum;// 라벨을 매기고
+//
+//                                    if (x - 1 > 0) pointBufferB[arraySizeB++] = new Point(point.x - 1, point.y);// B 버퍼에 오른, 왼, 위, 아래 포인트를 넣는다.
+//                                    if (x + 1 <= width) pointBufferB[arraySizeB++] = new Point(point.x + 1, point.y);
+//                                    if (y - 1 > 0) pointBufferB[arraySizeB++] = new Point(point.x, point.y - 1);
+//                                    if (y + 1 <= height) pointBufferB[arraySizeB++] = new Point(point.x, point.y + 1);
+//                                }
+//                            }Log.v("LittleLaboratory", "im here3");
+//
+//                            if (arraySizeB == 0) break;// A 버퍼에 화소를 가리키는 포인트가 하나도 없었다는 뜻 임으로 루프 종료.
+//
+//                            Point[] temp = pointBufferA;
+//                            pointBufferA = pointBufferB;// A는 이제 다 썼으니 B로 바꾸고
+//                            pointBufferB = temp;// A는 재활용을 위해 B 변수로
+//                            arraySizeB = 0;// 버퍼 사이즈 크기 값만을 줄임으로써 배열 객체 재활용!
+//
+//                            // B에 추가했던 포인트 배열을 A로 옮겼으니 A를 다시 루프.
+//                        }
+//                    }
                 }
             }
+            // 라벨링 완료.
+
         }
 //        {
 //            int[] imgBuffer = new int[width * height];
