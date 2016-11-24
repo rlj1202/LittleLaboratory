@@ -119,6 +119,8 @@ public class OpenCVTestActivity extends AppCompatActivity implements CameraBridg
         int width = rgba.width();
         int height = rgba.height();
 
+        int screenArea = width * height;
+
         Mat binarization = new Mat();
         Mat binarizationInv = new Mat();
 
@@ -140,10 +142,11 @@ public class OpenCVTestActivity extends AppCompatActivity implements CameraBridg
             stats.row(i).get(0, 0, rectInfo);
             Rect rect = new Rect(rectInfo[0], rectInfo[1], rectInfo[2], rectInfo[3]);
 
-            if (rect.width / (float) width > 0.8 || rect.height / (float) height > 0.8) continue;
-            if (rect.area() < 200) continue;
+//            if (rect.width / (float) width > 0.8 || rect.height / (float) height > 0.8) continue;
+            double areaRatio = rect.area() / screenArea;
+            if (areaRatio > 0.8 || areaRatio < 0.1) continue;
             int ratio = rect.height / rect.width;
-            if (5 < ratio || ratio < 0.2) continue;
+//            if (5 < ratio || ratio < 0.2) continue;
 
             rects[rectsSize++] = rect;
 
@@ -176,74 +179,6 @@ public class OpenCVTestActivity extends AppCompatActivity implements CameraBridg
         }
 
         return rgba;
-    }
-
-    private void labeling(int[] imgBuffer, int[] labelBuffer, int width, int height, int x, int y, Rect label, int labelNum) {
-        labelBuffer[x + y * width] = labelNum;
-        Point[] stack = new Point[width * height];
-        stack[0].x = x;
-        stack[0].y = y;
-        int stackCount = 1;
-
-        while (stackCount > 0) {
-            stackCount--;
-
-            x = (int) stack[stackCount].x;
-            y = (int) stack[stackCount].y;
-
-            if (label.x > x) {
-                label.x = x;
-            } else if (label.x + label.width < x) {
-                label.width = x - label.x;
-            }
-            if (label.y > y) {
-                label.y = y;
-            } else if (label.y + label.height < y) {
-                label.height = y - label.y;
-            }
-
-            int nX = x - 1;
-            int pX = x + 1;
-            int nY = y - 1;
-            int pY = y + 1;
-
-            if (nX >= 0) {
-                if (imgBuffer[nX + y * width] == 255 & labelBuffer[nX + y * width] == -1) {
-                    stack[stackCount].x = nX;
-                    stack[stackCount].y = y;
-
-                    labelBuffer[nX + y * width] = labelNum;
-                    stackCount++;
-                }
-            }
-            if (nY >= 0) {
-                if (imgBuffer[x + nY * width] == 255 && labelBuffer[x + nY * width] == -1) {
-                    stack[stackCount].x = x;
-                    stack[stackCount].y = nY;
-
-                    labelBuffer[x + nY * width] = labelNum;
-                    stackCount++;
-                }
-            }
-            if (pX < width) {
-                if (imgBuffer[pX + y * width] == 255 && labelBuffer[pX + y * width] == -1) {
-                    stack[stackCount].x = pX;
-                    stack[stackCount].y = y;
-
-                    labelBuffer[pX + y * width] = labelNum;
-                    stackCount++;
-                }
-            }
-            if (pY < height) {
-                if (imgBuffer[x + pY * width] == 255 && labelBuffer[x + pY * width] == -1) {
-                    stack[stackCount].x = x;
-                    stack[stackCount].y = pY;
-
-                    labelBuffer[x + pY * width] = labelNum;
-                    stackCount++;
-                }
-            }
-        }
     }
 
 }
