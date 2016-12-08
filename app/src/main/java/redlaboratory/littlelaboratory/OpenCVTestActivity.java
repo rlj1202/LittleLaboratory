@@ -113,7 +113,126 @@ public class OpenCVTestActivity extends AppCompatActivity implements CameraBridg
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        return newMethod(inputFrame);
+        return circleMarker(inputFrame);
+    }
+
+    public Mat circleMarker(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+        Mat grey = inputFrame.gray();
+        Mat rgba = inputFrame.rgba();
+
+        int width = rgba.width();
+        int height = rgba.height();
+
+        double screenArea = width * height;
+
+        Mat binarization = new Mat();
+        Mat binarizationInv = new Mat();
+
+        Imgproc.threshold(grey, binarization, 127, 255, Imgproc.THRESH_BINARY_INV);
+        Imgproc.threshold(grey, binarizationInv, 127, 255, Imgproc.THRESH_BINARY);
+
+        Mat labeled = new Mat();
+        Mat stats = new Mat();
+        Mat centroids = new Mat();
+
+        // int labels =
+        Imgproc.connectedComponentsWithStats(binarization, labeled, stats, centroids, 4, CvType.CV_16U);
+
+        int[] outterRectInfo = new int[5];
+        double[] outterRectCenterInfo = new double[2];
+        for (int outterRectIndex = 1; outterRectIndex < stats.rows(); outterRectIndex++) {
+            stats.row(outterRectIndex).get(0, 0, outterRectInfo);
+            centroids.row(outterRectIndex).get(0, 0, outterRectCenterInfo);
+            Rect outterRect = new Rect(outterRectInfo[0], outterRectInfo[1], outterRectInfo[2], outterRectInfo[3]);
+            Point outterRectCenter = new Point(outterRectCenterInfo[0], outterRectCenterInfo[1]);
+
+            if (outterRect.area() / screenArea >= 0.8) continue;
+            if (outterRect.area() / screenArea <= 0.0003) continue;
+            if (outterRect.area() < 100) continue;
+            if (outterRect.width / width > 0.8) continue;
+            if (outterRect.height / height > 0.8) continue;
+
+            Imgproc.rectangle(rgba, outterRect.br(), outterRect.tl(), new Scalar(255, 0, 0), 1);
+
+            Mat binaryInvCut = binarizationInv.submat(outterRect);
+
+            Mat innerLabeled = new Mat();
+            Mat innerStats = new Mat();
+            Mat innerCentroids = new Mat();
+
+            Imgproc.connectedComponentsWithStats(binaryInvCut, innerLabeled, innerStats, innerCentroids, 4, CvType.CV_16U);
+
+            int passedInnerRects = 0;
+
+            int[] innerRectInfo = new int[5];
+            double[] innerRectCenterInfo = new double[2];
+            for (int innerRectIndex = 1; innerRectIndex < innerStats.rows(); innerRectIndex++) {
+                innerStats.row(innerRectIndex).get(0, 0, innerRectInfo);
+                innerCentroids.row(innerRectIndex).get(0, 0, innerRectCenterInfo);
+                Rect innerRect = new Rect(innerRectInfo[0], innerRectInfo[1], innerRectInfo[2], innerRectInfo[3]);
+                Rect innerRectAb = innerRect.clone(); innerRectAb.x += outterRect.x; innerRectAb.y += outterRect.y;
+                Point innerRectCenter = new Point(innerRectCenterInfo[0], innerRectCenterInfo[1]);
+                Point innerRectCenterAb = innerRectCenter.clone(); innerRectCenterAb.x += outterRect.x; innerRectCenterAb.y += outterRect.y;
+
+                Imgproc.rectangle(rgba, innerRectAb.br(), innerRectAb.tl(), new Scalar(255, 0, 0), 1);
+
+                double areaRatio = innerRect.area() / outterRect.area();
+                final double areaRatioConstant = 0.25;
+                final double areaRatioDelta = 0.1;
+
+                double centerDistanceSquare = Math.pow(innerRectCenter.x + outterRect.x - outterRectCenter.x, 2) + Math.pow(innerRectCenter.y + outterRect.y - outterRectCenter.y, 2);
+                double outterRectDistanceSquare = Math.pow(outterRect.tl().x - outterRect.br().x, 2) + Math.pow(outterRect.tl().y - outterRect.br().y, 2);
+                double distanceRatio = centerDistanceSquare / outterRectDistanceSquare;
+
+                boolean innerAreaCondition = (areaRatioConstant - areaRatioDelta <= areaRatio) && (areaRatio <= areaRatioConstant + areaRatioDelta);
+                boolean innerDistanceCondition = distanceRatio <= 0.01;
+                if (innerAreaCondition && innerDistanceCondition) {
+                    int passedMiddleRects = 0;
+
+                    int[] middleRectInfo = new int[5];
+                    double[] middleRectCenterInfo = new double[2];
+                    for (int middleRectIndex = 1; middleRectIndex < stats.rows(); middleRectIndex++) {
+                        stats.row(middleRectIndex).get(0, 0, middleRectInfo);
+                        centroids.row(middleRectIndex).get(0, 0, middleRectCenterInfo);
+                        Rect middleRect = new Rect(middleRectInfo[0], middleRectInfo[1], middleRectInfo[2], middleRectInfo[3]);
+                        Point middleRectCenter = new Point(middleRectCenterInfo[0], middleRectCenterInfo[1]);
+
+                        if (innerRectAb.contains(middleRect.br()) && innerRectAb.contains(middleRect.tl())) {
+                            double distanceBetweenInnerAndMiddleSquare = Math.pow(innerRectCenterAb.x - middleRectCenter.x, 2) + Math.pow(innerRectCenterAb.y - middleRectCenter.y, 2);
+
+                            double middleAreaRatio = middleRect.area() / outterRect.area();
+                            final double middleRatioConstant = 0.04;
+                            final double middleRatioDelta = 0.02;
+
+                            boolean middleAreaCondition = (middleRatioConstant - middleRatioDelta <= middleAreaRatio) && (middleAreaRatio <= middleRatioConstant + middleRatioDelta);
+
+                            Imgproc.circle(rgba, innerRectCenterAb, 2, new Scalar(0, 255, 0), 4);
+                            Imgproc.circle(rgba, middleRectCenter, 2, new Scalar(0, 0, 255), 4);
+                            if (distanceBetweenInnerAndMiddleSquare < 100 && middleAreaCondition) {
+                                passedMiddleRects++;
+
+                                Imgproc.putText(rgba, "distanceRatio " + Math.round(distanceBetweenInnerAndMiddleSquare*1000)/1000.0, middleRectCenter, 3, 1, new Scalar(0, 0, 255));
+                                Imgproc.rectangle(rgba, middleRect.br(), middleRect.tl(), new Scalar(0, 0, 255), 8);
+                            }
+                        }
+                    }
+
+                    if (passedMiddleRects == 1) {
+                        passedInnerRects++;
+
+                        Imgproc.rectangle(rgba, innerRectAb.br(), innerRectAb.tl(), new Scalar(0, 255, 0), 4);
+                        Imgproc.putText(rgba, "distanceRatio " + Math.round(distanceRatio*1000)/1000.0, innerRectAb.br(), 3, 1, new Scalar(0, 255, 0));
+                        Imgproc.putText(rgba, "areaRatio " + Math.round(areaRatio*1000)/1000.0, new Point(innerRectAb.br().x, innerRectAb.br().y - 20), 3, 1, new Scalar(0, 255, 0));
+                    }
+                }
+            }
+
+            if (passedInnerRects == 1) {
+                Imgproc.rectangle(rgba, outterRect.br(), outterRect.tl(), new Scalar(255, 0, 0), 3);
+            }
+        }
+
+        return rgba;
     }
 
     public Mat newMethod(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
