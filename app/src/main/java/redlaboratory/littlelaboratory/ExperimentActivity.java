@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import redlaboratory.littlelaboratory.analyze.Analyze;
+import redlaboratory.littlelaboratory.db.DataType;
 import redlaboratory.littlelaboratory.db.Experiment;
 import redlaboratory.littlelaboratory.db.LittleLaboratoryDbHelper;
 import redlaboratory.littlelaboratory.db.Measurement;
@@ -133,7 +134,7 @@ public class ExperimentActivity extends AppCompatActivity {
             graphView.getViewport().setScalable(true);
             graphView.getLegendRenderer().setVisible(true);
             graphView.getLegendRenderer().setAlign(LegendRenderer.LegendAlign.TOP);
-            graphView.getGridLabelRenderer().setLabelVerticalWidth(40);
+            graphView.getGridLabelRenderer().setLabelVerticalWidth(80);
             graphView.setTitle(item.measurement.getTitle());
 
             Button viewButton = (Button) view.findViewById(R.id.view);
@@ -271,7 +272,7 @@ public class ExperimentActivity extends AppCompatActivity {
 //                startActivityForResult(intent, REQUEST_NEW_ANALYZE);
 
                 Intent intent = new Intent(ExperimentActivity.this, OpenCVTestActivity.class);
-                startActivity(intent);
+                startActivityForResult(intent, REQUEST_NEW_ANALYZE);
             }
         });
     }
@@ -380,7 +381,18 @@ public class ExperimentActivity extends AppCompatActivity {
         }
         if (requestCode == REQUEST_NEW_ANALYZE) {
             if (resultCode == RESULT_OK) {
+                ArrayList<Double> record = (ArrayList<Double>) data.getSerializableExtra("distances");
 
+                Log.i("LittleLaboratory", "Get distances datas: {size: " + record.size() + "}");
+
+                long seriesId = dbHelper.insertSeries("distance", 0xffff00ff, record);
+                long measurementId = dbHelper.insertMeasurement(getString(R.string.distance), DataType.DATA_DISPLACEMENT, new long[] {seriesId});
+
+                experiment.getMeasurements().add(measurementId);
+                dbHelper.updateExperiment(experiment);
+
+                MeasurementsListViewItem item = getMeasurementsListViewItem(measurementId);
+                addMeasurementItem(item);
             }
         }
     }

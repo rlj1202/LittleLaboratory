@@ -105,15 +105,16 @@
                 android:layout_marginLeft="16dp"
                 android:layout_marginRight="16dp"
                 android:clickable="true"
-                android:src="@drawable/ic_add_white_24dp"
-                app:fabSize="normal"/>
+                android:src="@drawable/ic_camera_alt_white_24dp"
+                app:fabSize="normal"
+                app:backgroundTint="@android:color/holo_red_light"/>
             <android.support.design.widget.FloatingActionButton
                 android:id="@+id/newmeasurementfab"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="16dp"
                 android:clickable="true"
-                android:src="@drawable/ic_add_white_24dp"
+                android:src="@drawable/ic_timeline_white_24dp"
                 app:fabSize="normal"
                 app:backgroundTint="@android:color/holo_red_dark"/>
         </LinearLayout>

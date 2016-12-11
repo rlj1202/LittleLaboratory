@@ -19,7 +19,7 @@ public enum SensorInformation {
     private static HashMap<Integer, SensorInformation> sensorInformations;
 
     static {
-        sensorInformations = new HashMap<Integer, SensorInformation>();
+        sensorInformations = new HashMap<>();
 
         for (SensorInformation sensorInformation : values()) {
             sensorInformations.put(sensorInformation.getSensorType(), sensorInformation);

@@ -1,12 +1,16 @@
 package redlaboratory.littlelaboratory;
 
+import android.content.Intent;
 import android.graphics.Region;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.TextView;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -29,6 +33,7 @@ import org.opencv.imgproc.Imgproc;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 
 public class OpenCVTestActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
@@ -39,6 +44,24 @@ public class OpenCVTestActivity extends AppCompatActivity implements CameraBridg
         } else {
             Log.i("LittleLaboratory", "OpenCV initialize success");
         }
+    }
+
+    public static class CircleMarker {
+
+        private Rect outterRect;
+        private Rect innerRect;
+        private Rect middleRect;
+
+        private Point center;
+
+        public CircleMarker(Rect outterRect, Rect innerRect, Rect middleRect, Point center) {
+            this.outterRect = outterRect;
+            this.innerRect = innerRect;
+            this.middleRect = middleRect;
+
+            this.center = center;
+        }
+
     }
 
     private CameraBridgeViewBase mOpenCvCameraView;
@@ -60,6 +83,13 @@ public class OpenCVTestActivity extends AppCompatActivity implements CameraBridg
         }
     };
 
+    private boolean measuring = false;
+    private List<CircleMarker> track = new ArrayList<>();
+    private double calibration = -1;// unit is "diameter in pixel per meter"
+
+    private long prevMillis;
+    private ArrayList<Double> record = new ArrayList<>();
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -74,6 +104,46 @@ public class OpenCVTestActivity extends AppCompatActivity implements CameraBridg
         mOpenCvCameraView.setCvCameraViewListener(this);
 
         mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
+
+        final TextView textView = (TextView) findViewById(R.id.textView);
+        textView.setText(R.string.not_calibrated);
+
+        final FloatingActionButton measureToggleButton = (FloatingActionButton) findViewById(R.id.measureToggleButton);
+        measureToggleButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!measuring) {
+                    if (calibration != -1) {
+                        measuring = true;
+                        prevMillis = System.currentTimeMillis();
+                        measureToggleButton.setImageResource(R.drawable.ic_stop_white_24dp);
+                    }
+                } else {
+                    measuring = false;
+                    measureToggleButton.setImageResource(R.drawable.ic_play_arrow_white_24dp);
+
+                    Intent intent = new Intent();
+                    intent.putExtra("distances", record);
+                    setResult(RESULT_OK, intent);
+                    finish();
+                }
+            }
+        });
+
+        FloatingActionButton calibratingButton = (FloatingActionButton) findViewById(R.id.calibratingButton);
+        calibratingButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!measuring) {
+                    if (track.size() > 0) {
+                        CircleMarker lastMarker = track.get(track.size() - 1);
+                        calibration = Math.max(lastMarker.outterRect.width, lastMarker.outterRect.height);
+
+                        textView.setText(String.format(Locale.KOREA, "%f pixel area per meter", calibration));
+                    }
+                }
+            }
+        });
     }
 
     @Override
@@ -116,7 +186,7 @@ public class OpenCVTestActivity extends AppCompatActivity implements CameraBridg
         return circleMarker(inputFrame);
     }
 
-    public Mat circleMarker(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+    private Mat circleMarker(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         Mat grey = inputFrame.gray();
         Mat rgba = inputFrame.rgba();
 
@@ -138,6 +208,8 @@ public class OpenCVTestActivity extends AppCompatActivity implements CameraBridg
         // int labels =
         Imgproc.connectedComponentsWithStats(binarization, labeled, stats, centroids, 4, CvType.CV_16U);
 
+        List<CircleMarker> markers = new ArrayList<>();
+
         int[] outterRectInfo = new int[5];
         double[] outterRectCenterInfo = new double[2];
         for (int outterRectIndex = 1; outterRectIndex < stats.rows(); outterRectIndex++) {
@@ -152,7 +224,7 @@ public class OpenCVTestActivity extends AppCompatActivity implements CameraBridg
             if (outterRect.width / width > 0.8) continue;
             if (outterRect.height / height > 0.8) continue;
 
-            Imgproc.rectangle(rgba, outterRect.br(), outterRect.tl(), new Scalar(255, 0, 0), 1);
+            Imgproc.rectangle(rgba, outterRect.br(), outterRect.tl(), new Scalar(255, 0, 0), 1);// TODO
 
             Mat binaryInvCut = binarizationInv.submat(outterRect);
 
@@ -162,7 +234,8 @@ public class OpenCVTestActivity extends AppCompatActivity implements CameraBridg
 
             Imgproc.connectedComponentsWithStats(binaryInvCut, innerLabeled, innerStats, innerCentroids, 4, CvType.CV_16U);
 
-            int passedInnerRects = 0;
+            List<Rect> passedInnerRects = new ArrayList<>();
+            List<Rect> passedMiddleRects = new ArrayList<>();
 
             int[] innerRectInfo = new int[5];
             double[] innerRectCenterInfo = new double[2];
@@ -187,8 +260,6 @@ public class OpenCVTestActivity extends AppCompatActivity implements CameraBridg
                 boolean innerAreaCondition = (areaRatioConstant - areaRatioDelta <= areaRatio) && (areaRatio <= areaRatioConstant + areaRatioDelta);
                 boolean innerDistanceCondition = distanceRatio <= 0.01;
                 if (innerAreaCondition && innerDistanceCondition) {
-                    int passedMiddleRects = 0;
-
                     int[] middleRectInfo = new int[5];
                     double[] middleRectCenterInfo = new double[2];
                     for (int middleRectIndex = 1; middleRectIndex < stats.rows(); middleRectIndex++) {
@@ -204,37 +275,140 @@ public class OpenCVTestActivity extends AppCompatActivity implements CameraBridg
                             final double middleRatioConstant = 0.04;
                             final double middleRatioDelta = 0.02;
 
+                            Imgproc.circle(rgba, innerRectCenterAb, 2, new Scalar(0, 255, 0), 4);// TODO
+                            Imgproc.circle(rgba, middleRectCenter, 2, new Scalar(0, 0, 255), 4);// TODO
+
+                            boolean middleRectDistanceCondition = distanceBetweenInnerAndMiddleSquare < 100;
                             boolean middleAreaCondition = (middleRatioConstant - middleRatioDelta <= middleAreaRatio) && (middleAreaRatio <= middleRatioConstant + middleRatioDelta);
+                            if (middleRectDistanceCondition && middleAreaCondition) {
+                                passedMiddleRects.add(middleRect);
 
-                            Imgproc.circle(rgba, innerRectCenterAb, 2, new Scalar(0, 255, 0), 4);
-                            Imgproc.circle(rgba, middleRectCenter, 2, new Scalar(0, 0, 255), 4);
-                            if (distanceBetweenInnerAndMiddleSquare < 100 && middleAreaCondition) {
-                                passedMiddleRects++;
-
+                                // TODO
                                 Imgproc.putText(rgba, "distanceRatio " + Math.round(distanceBetweenInnerAndMiddleSquare*1000)/1000.0, middleRectCenter, 3, 1, new Scalar(0, 0, 255));
-                                Imgproc.rectangle(rgba, middleRect.br(), middleRect.tl(), new Scalar(0, 0, 255), 8);
                             }
                         }
                     }
 
-                    if (passedMiddleRects == 1) {
-                        passedInnerRects++;
+                    if (passedMiddleRects.size() == 1) {
+                        passedInnerRects.add(innerRectAb);
 
-                        Imgproc.rectangle(rgba, innerRectAb.br(), innerRectAb.tl(), new Scalar(0, 255, 0), 4);
+                        // TODO
                         Imgproc.putText(rgba, "distanceRatio " + Math.round(distanceRatio*1000)/1000.0, innerRectAb.br(), 3, 1, new Scalar(0, 255, 0));
                         Imgproc.putText(rgba, "areaRatio " + Math.round(areaRatio*1000)/1000.0, new Point(innerRectAb.br().x, innerRectAb.br().y - 20), 3, 1, new Scalar(0, 255, 0));
                     }
                 }
             }
 
-            if (passedInnerRects == 1) {
-                Imgproc.rectangle(rgba, outterRect.br(), outterRect.tl(), new Scalar(255, 0, 0), 3);
+            if (passedInnerRects.size() == 1) {
+                markers.add(new CircleMarker(outterRect, passedInnerRects.get(0), passedMiddleRects.get(0), outterRectCenter));
             }
+        }
+
+        for (CircleMarker marker : markers) {
+            double diameter = Math.max(marker.outterRect.width, marker.outterRect.height);
+
+            double distance = calibration / diameter;
+
+            Imgproc.rectangle(rgba, marker.outterRect.br(), marker.outterRect.tl(), new Scalar(255, 0, 0), 4);
+            Imgproc.rectangle(rgba, marker.innerRect.br(), marker.innerRect.tl(), new Scalar(0, 255, 0), 4);
+            Imgproc.rectangle(rgba, marker.middleRect.br(), marker.middleRect.tl(), new Scalar(0, 0, 255), 4);
+
+            Imgproc.putText(rgba, "distance: " + distance, marker.center, 3, 1, new Scalar(255, 255, 255));
+        }
+
+        if (track.size() == 0) {
+            if (markers.size() == 1) {
+                track.add(markers.get(0));
+            }
+        } else {
+            if (markers.size() >= 1) {
+                CircleMarker lastMarker = track.get(0);
+
+                CircleMarker bestMarker = null;
+                double bestAreaSimilarity = 0;
+
+                for (CircleMarker curMarker : markers) {
+                    double areaSimilarity = curMarker.outterRect.area() / lastMarker.outterRect.area();
+
+                    if (areaSimilarity > bestAreaSimilarity) {
+                        bestMarker = curMarker;
+                        bestAreaSimilarity = areaSimilarity;
+                    }
+                }
+
+                if (bestMarker != null) {
+                    track.add(bestMarker);
+
+                    if (measuring) {
+                        double diameter = Math.max(bestMarker.outterRect.width, bestMarker.outterRect.height);
+                        double distance = calibration / diameter;
+
+                        long curMillis = System.currentTimeMillis();
+                        long deltaMillis = curMillis - prevMillis;
+
+                        record.add(deltaMillis / 1000.0);
+                        record.add(distance);
+                    }
+
+                    if (!measuring && track.size() > 20) {
+                        track.remove(0);
+                    }
+                }
+            }
+        }
+
+        Point prevCenter = null;
+        for (CircleMarker marker : track.subList(Math.max(0, track.size() - 50), Math.max(0, track.size() - 1))) {
+            if (prevCenter != null) Imgproc.line(rgba, prevCenter, marker.center, new Scalar(255, 0, 255), 4);
+            prevCenter = marker.center;
         }
 
         return rgba;
     }
 
+    @Deprecated
+    private List<List<CircleMarker>> proceedMarkers(List<List<CircleMarker>> tracks, List<CircleMarker> markers) {
+        for (CircleMarker marker : markers) {
+            List<CircleMarker> bestTrack = null;
+            double bestSizeSimilarity = 0;
+            double bestDistanceSquareSimilarity = 0;
+
+            for (List<CircleMarker> track : tracks) {
+                CircleMarker lastMarker = track.get(track.size() - 1);
+                double sizeSimilarity = marker.outterRect.area() / lastMarker.outterRect.area();
+                double distanceSquareSimilarity = Math.pow(marker.center.x - lastMarker.center.x, 2) + Math.pow(marker.center.y - lastMarker.center.y, 2);
+
+                if (bestSizeSimilarity < sizeSimilarity) {
+                    bestTrack = track;
+                    bestSizeSimilarity = sizeSimilarity;
+                    bestDistanceSquareSimilarity = distanceSquareSimilarity;
+                }
+            }
+
+            if (bestTrack != null) {
+                Log.v("LittleLaboratory", "add marker {bestSizeSimilarity: " + bestSizeSimilarity + ", bestDistanceSquareSimilarity: " + bestDistanceSquareSimilarity + "}");
+
+                boolean sizeCondition = bestSizeSimilarity > 0.8;
+                boolean distanceCondition =  bestDistanceSquareSimilarity < 4000;
+                if (sizeCondition) {
+                    bestTrack.add(marker);
+
+                    return tracks;
+                }
+            }
+
+            Log.v("LittleLaboratory", "new track.");
+
+            List<CircleMarker> track = new ArrayList<>();
+            track.add(marker);
+
+            tracks.add(track);
+        }
+
+        return tracks;
+    }
+
+    @Deprecated
     public Mat newMethod(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         Mat grey = inputFrame.gray();
         Mat rgba = inputFrame.rgba();
@@ -321,6 +495,7 @@ public class OpenCVTestActivity extends AppCompatActivity implements CameraBridg
         return rgba;
     }
 
+    @Deprecated
     public Mat old(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         Log.v("LittleLaboratory", "OpenCV onCameraFrame");
 

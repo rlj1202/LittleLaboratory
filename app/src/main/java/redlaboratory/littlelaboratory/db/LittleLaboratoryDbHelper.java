@@ -403,8 +403,12 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
             }
 
             LineGraphSeries<DataPoint> series = new LineGraphSeries<>();
-            for (Iterator<Double> it = data.iterator(); it.hasNext();) {
-                series.appendData(new DataPoint(it.next(), it.next()), true, data.size() / 2);
+            try {
+                for (Iterator<Double> it = data.iterator(); it.hasNext();) {
+                    series.appendData(new DataPoint(it.next(), it.next()), true, data.size() / 2);
+                }
+            } catch (IllegalArgumentException e) {
+
             }
 
             result.add(new Series(id, title, color, data, series));
@@ -440,8 +444,12 @@ public class LittleLaboratoryDbHelper extends SQLiteOpenHelper {
         }
 
         LineGraphSeries<DataPoint> series = new LineGraphSeries<>();
-        for (Iterator<Double> it = data.iterator(); it.hasNext();) {
-            series.appendData(new DataPoint(it.next(), it.next()), true, data.size() / 2);
+        try {
+            for (Iterator<Double> it = data.iterator(); it.hasNext();) {
+                series.appendData(new DataPoint(it.next(), it.next()), true, data.size() / 2);
+            }
+        } catch (IllegalArgumentException e) {
+
         }
         series.setTitle(title);
         series.setColor(color);

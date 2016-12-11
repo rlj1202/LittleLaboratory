@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<android.support.design.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:opencv="http://schemas.android.com/apk/res-auto"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
+
     <org.opencv.android.JavaCameraView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -12,4 +14,37 @@
         opencv:show_fps="true"
         opencv:camera_id="back"
         />
-</LinearLayout>
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="left|bottom"
+        android:layout_margin="10dp"
+        android:textColor="@android:color/white"
+        android:textSize="12sp"/>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_gravity="right|bottom">
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/calibratingButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:clickable="true"
+            android:src="@drawable/ic_sync_white_24dp"
+            app:backgroundTint="@android:color/holo_orange_light"/>
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/measureToggleButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:clickable="true"
+            android:src="@drawable/ic_play_arrow_white_24dp"
+            app:backgroundTint="@android:color/holo_orange_dark"/>
+    </LinearLayout>
+</android.support.design.widget.CoordinatorLayout>
